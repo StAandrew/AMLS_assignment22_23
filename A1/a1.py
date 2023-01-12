@@ -5,44 +5,65 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 import os
 import cv2
-from cv2 import IMREAD_GRAYSCALE
+from cv2 import IMREAD_GRAYSCALE, IMREAD_COLOR
+import time
+
+VERIFICATION_SPLIT = 0.2
+
+
+def load_data(root_path):
+    # Create paths
+    dataset_img_path = os.path.join(root_path, "img")
+    dataset_labels_path = os.path.join(root_path, "labels.csv")
+    # Load the labels
+    labels = pd.read_csv(dataset_labels_path, skipinitialspace=True, sep="\t")
+    # Load the images
+    image_read = []
+    for image_name in labels["img_name"]:
+        image = cv2.imread(os.path.join(dataset_img_path, image_name), IMREAD_COLOR)
+        image_read.append(image)
+
+    images = np.array(image_read)
+    return labels, images
 
 
 # Create paths for cross-os support
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-celeba_dataset_root_path = os.path.join(
-    parent_dir, "Datasets", "dataset_AMLS_22-23", "celeba"
-)
-celeba_dataset_img_path = os.path.join(celeba_dataset_root_path, "img")
-celeba_dataset_labels_path = os.path.join(celeba_dataset_root_path, "labels.csv")
 
-# Load the labels
-labels = pd.read_csv(celeba_dataset_labels_path, skipinitialspace=True, sep="\t")
+# Load development and test datasets
+dataset_root_path = os.path.join(parent_dir, "Datasets", "celeba")
+labels, images = load_data(dataset_root_path)
 
-# Load the images
-image_read = []
-for image_name in labels["img_name"]:
-    image = cv2.imread(
-        os.path.join(celeba_dataset_img_path, image_name), IMREAD_GRAYSCALE
-    )
-    image_read.append(image)
+test_root_path = os.path.join(parent_dir, "Datasets", "celeba_test")
+test_labels, test_images = load_data(test_root_path)
 
-images = np.array(image_read)
-n_samples, nx, ny = images.shape
-images_dataset = images.reshape(n_samples, nx * ny)
+n_samples, img_height, img_width, n_channels = images.shape
+images_dataset = images.reshape(n_samples, img_height * img_width * n_channels)
 
 # Split the data into training and test sets
-X_train, X_test, y_train, y_test = train_test_split(
-    images_dataset, labels["gender"].values, test_size=0.2, random_state=0
+img_train, img_verify, label_train, label_verify = train_test_split(
+    images_dataset,
+    labels["gender"].values,
+    test_size=VERIFICATION_SPLIT,
+    random_state=0,
+    shuffle=True,
 )
+img_train = np.array(img_train)
+img_verify = np.array(img_verify)
+label_train = np.array(label_train)
+label_verify = np.array(label_verify)
+
 print("Loaded. Starting training...")
+# exit(0)
+time.sleep(3)
 
 # Create and train SVM model
 model = svm.SVC(kernel="linear")
-model.fit(X_train, y_train)
+model.fit(img_train, label_train)
 
 # Evaluate the model on the test set
 print("Training finished. Evaluating...")
-y_pred = model.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
+label_pred = model.predict(img_verify)
+accuracy = accuracy_score(label_verify, label_pred)
 print("Accuracy: {:2f}%".format(accuracy * 100))
+
