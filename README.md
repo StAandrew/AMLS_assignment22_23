@@ -38,3 +38,6 @@ cd /venv/lib/python3.10/site-packages/tensorrt
 ln -s libnvinfer.so.8 libnvinfer.so.7
 
 ln -s libnvinfer_plugin.so.8 libnvinfer_plugin.so.6
+
+To run a module: python3 -m A1.a1
+To run the entire project: python3 -m main
