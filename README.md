@@ -19,28 +19,28 @@ For training on UCL GPU servers use the following:
 
 Install python3.10 for the current user (since there are no sudo privileges) 
 
-> python3 -m venv venv
+`python3 -m venv venv`
 
-> pip3 install -r requirements.txt
+`pip3 install -r requirements.txt`
 
-> setenv XLA_FLAGS --xla_gpu_cuda_data_dir=/apps/cuda/cuda-11.2.0
+`setenv XLA_FLAGS --xla_gpu_cuda_data_dir=/apps/cuda/cuda-11.2.0`
 
-> cd venv/lib/python3.10/site-packages/tensorrt
+`cd venv/lib/python3.10/site-packages/tensorrt`
 
-> ln -s libnvinfer.so.8 libnvinfer.so.7
+`ln -s libnvinfer.so.8 libnvinfer.so.7`
 
-> ln -s libnvinfer_plugin.so.8 libnvinfer_plugin.so.6
+`ln -s libnvinfer_plugin.so.8 libnvinfer_plugin.so.6`
 
-> pwd
+`pwd`
 
-> setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH\\:**last_command_output**/venv/lib/python3.10/site-packages/tensorrt
+`setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH\\:**last_command_output**/venv/lib/python3.10/site-packages/tensorrt`
 
 optional: 
 
-> setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH\\:/apps/cuda/cuda-11.2.0/nvvm/libdevice
+`setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH\\:/apps/cuda/cuda-11.2.0/nvvm/libdevice`
 
 To run a module: 
-> python3 -m A1.a1
+`python3 -m A1.a1`
 
 To run the entire project: 
-> python3 -m main
+`python3 -m main`
