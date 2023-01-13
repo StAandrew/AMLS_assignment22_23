@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Conv2D, Dropout, Flatten, MaxPooling2D
 from tensorflow.keras import optimizers
-from helper_utils import plot_history
+from helper_utils import plot_history, plot_confusion_matrix
 
 
 # MNIST dataset parameters.
@@ -20,8 +20,10 @@ learning_rate = 0.001
 training_steps = 78
 batch_size = 128
 display_step = 10
-epochs = 1
-num_samples = 100  # -1 for all samples
+epochs = 10
+num_samples = -1  # -1 for all available samples
+train_model = False
+save_model = False  # only save if train_model is True
 
 # Network parameters.
 conv1_filters = 32 # number of filters for 1st conv layer.
@@ -94,7 +96,15 @@ class B2Model:
             Dense(num_classes, activation='softmax')
         ])
         self.model.summary()
-        self.model.compile(optimizer=optimizers.Adam(learning_rate=learning_rate),
+        adam = tf.keras.optimizers.Adam(
+            learning_rate=tf.Variable(learning_rate),
+            beta_1=tf.Variable(0.9),
+            beta_2=tf.Variable(0.999),
+            epsilon=tf.Variable(1e-7),
+        )
+        adam.iterations
+        adam.decay = tf.Variable(0.0)
+        self.model.compile(optimizer=adam,
                            loss='sparse_categorical_crossentropy',
                            metrics=['accuracy'])
 
@@ -121,9 +131,10 @@ class B2Model:
         predictions = self.model.predict(x=testing_batches, steps=len(testing_batches), verbose=verbose)
         predictions = np.round(predictions)
         predicted_labels = np.array(np.argmax(predictions, axis=-1))
-        true_labels = np.array(testing_batches.classes)
+        true_labels = np.array(np.concatenate([y for x, y in testing_batches], axis=0))
+        print(true_labels)
         if confusion_mesh:
-            plot_confusion_mesh(class_labels, predicted_labels, true_labels)
+            plot_confusion_matrix(class_labels, predicted_labels, true_labels)
         return accuracy_score(true_labels, predicted_labels)
 
 
@@ -133,40 +144,49 @@ def main():
     # Create paths for cross-os support
     parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    # Load training data, split into training and validation sets
-    x_dev, y_dev = get_training_data(parent_dir)
-    x_train, x_valid, y_train, y_valid = train_test_split(x_dev, y_dev, test_size=0.2, random_state=42)
-    x_train = np.array(x_train)
-    y_train = np.array(y_train)
-    x_valid = np.array(x_valid)
-    y_valid = np.array(y_valid)
-    
-    # Load test data
+    # Build neural network model.
+    input_shape = (500, 500, 3)
+    # input_shape = np.array(np.reshape(training_data.element_spec[0].shape, (3, )))
+    b2_model = B2Model(input_shape)
+    print("model built")
+
+    save_dir = os.path.join(parent_dir, "B2_weights.h5")
+    if train_model:
+        # Load training data, split into training and validation sets
+        x_dev, y_dev = get_training_data(parent_dir)
+        x_train, x_valid, y_train, y_valid = train_test_split(x_dev, y_dev, test_size=0.2, random_state=42)
+        x_train = np.array(x_train)
+        y_train = np.array(y_train)
+        x_valid = np.array(x_valid)
+        y_valid = np.array(y_valid)
+
+        # Use tf.data API to shuffle and batch data.
+        training_data = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+        training_batches = training_data.shuffle(len(training_data)).batch(batch_size).prefetch(1)
+
+        validation_data = tf.data.Dataset.from_tensor_slices((x_valid, y_valid))
+        validation_batches = validation_data.shuffle(len(validation_data)).batch(batch_size).prefetch(1)
+        print("data prepared")
+
+        acc_B2_train, acc_B2_valid = b2_model.train(training_batches, validation_batches, epochs=epochs, verbose=2, plot=True)
+        print("model trained")
+        if save_model:
+            b2_model.model.save_weights(save_dir)
+            print("model saved")
+    else:  # no model training, load saved model
+        b2_model.model.load_weights(save_dir)
+        print("model loaded")
+
+    # Load testing data
     x_test, y_test = get_testing_data(parent_dir)
-    print("data loaded")
-
-    # Use tf.data API to shuffle and batch data.
-    training_data = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-    training_batches = training_data.shuffle(len(training_data)).batch(batch_size).prefetch(1)
-
-    validation_data = tf.data.Dataset.from_tensor_slices((x_valid, y_valid))
-    validation_batches = validation_data.shuffle(len(validation_data)).batch(batch_size).prefetch(1)
+    print("testing data loaded")
 
     test_data = tf.data.Dataset.from_tensor_slices((x_test, y_test))
     test_batches = test_data.shuffle(len(test_data)).batch(batch_size).prefetch(1)
-    print("data prepared")
+    print("testing data prepared")
 
-    input_shape = (500, 500, 3)
-    # input_shape = np.array(np.reshape(training_data.element_spec[0].shape, (3, )))
-
-    # Build neural network model.
-    model = B2Model(input_shape)
-    print("model built")
-
-    acc_B2_train, acc_B2_valid = model.train(training_batches, validation_batches, epochs=epochs, verbose=2, plot=True)
-    print("model trained")
-
-    acc_B2_test = model.test(test_batches, verbose=1, confusion_mesh=True)  
+    # Evaluate model on test set
+    acc_B2_test = b2_model.test(test_batches, verbose=1, confusion_mesh=True)  
     print("model tested")
 
 
