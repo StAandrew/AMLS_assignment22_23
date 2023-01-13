@@ -17,13 +17,17 @@ https://bit.ly/dataset_AMLS_22-23_test
   
 For training on UCL GPU servers use the following:
 
-Install python3.10 for the current user (since no sudo privileges) 
+Install python3.10 for the current user (since there are no sudo privileges) 
 
 python3 -m venv venv
 
 pip3 install -r requirements.txt
 
 pwd
+
+setenv XLA_FLAGS --xla_gpu_cuda_data_dir=/apps/cuda/cuda-11.2.0
+
+setenv CUDA_DIR /apps/cuda/cuda-11.2.0
 
 setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH\:<last command output>/venv/lib/python3.10/site-packages/tensorrt
 
