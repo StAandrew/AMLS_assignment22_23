@@ -12,3 +12,25 @@ The datasets can be downloaded via following link:
 https://bit.ly/dataset_AMLS_22-23  
 A separate test set:  
 https://bit.ly/dataset_AMLS_22-23_test  
+  
+  
+  
+For training on UCL GPU servers use the following:
+
+Install python3.10 for the current user (since no sudo privileges) 
+
+python3 -m venv venv
+
+pip3 install -r requirements.txt
+
+pwd
+
+setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH\:<last command output>/venv/lib/python3.10/site-packages/tensorrt
+
+setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH\:/apps/cuda/cuda-11.2.0/nvvm/libdevice
+  
+cd /venv/lib/python3.10/site-packages/tensorrt
+
+ln -s libnvinfer.so.8 libnvinfer.so.7
+
+ln -s libnvinfer_plugin.so.8 libnvinfer_plugin.so.6
