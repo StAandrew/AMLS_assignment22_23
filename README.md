@@ -27,17 +27,17 @@ pwd
 
 setenv XLA_FLAGS --xla_gpu_cuda_data_dir=/apps/cuda/cuda-11.2.0
 
-setenv CUDA_DIR /apps/cuda/cuda-11.2.0
-
-setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH\:<last command output>/venv/lib/python3.10/site-packages/tensorrt
-
-setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH\:/apps/cuda/cuda-11.2.0/nvvm/libdevice
-  
 cd /venv/lib/python3.10/site-packages/tensorrt
 
 ln -s libnvinfer.so.8 libnvinfer.so.7
 
 ln -s libnvinfer_plugin.so.8 libnvinfer_plugin.so.6
+
+optional: 
+
+setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH\:<last command output>/venv/lib/python3.10/site-packages/tensorrt
+
+setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH\:/apps/cuda/cuda-11.2.0/nvvm/libdevice
 
 To run a module: python3 -m A1.a1
 To run the entire project: python3 -m main
