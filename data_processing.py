@@ -118,8 +118,7 @@ def save_datasets(labels_df, feature_arr, dataset_labels_path, dataset_feature_a
     :param dataset_feature_arr_path: path to the array containing the features
     """
     labels_df.to_csv(dataset_labels_path, sep="\t", index=False)
-    feature_arr.tofile(dataset_feature_arr_path)
-    exit()
+    np.savez(dataset_feature_arr_path, feature_arr)
 
 
 def load_datasets(dataset_labels_path, dataset_features_arr_path):
@@ -130,7 +129,8 @@ def load_datasets(dataset_labels_path, dataset_features_arr_path):
     """
     try:
         labels_df = pd.read_csv(dataset_labels_path, skipinitialspace=True, sep="\t")
-        feature_arr = np.fromfile(dataset_features_arr_path, dtype=int)
+        feature_arr_file = np.load(dataset_features_arr_path, allow_pickle = True)
+        feature_arr = feature_arr_file['arr_0']
     except:
         return None, None
     return labels_df, feature_arr

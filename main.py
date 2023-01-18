@@ -11,11 +11,10 @@ initial_config()
 #  A1 & A2
 labels_df, feature_arr = load_datasets(celeba_features_train_label_dir, celeba_features_train_img_dir)
 if labels_df is None or feature_arr is None:
+
     labels_df, images = load_raw_datasets(celeba_train_img_dir, celeba_train_label_dir, "img_name")
     face_labels, face_features = extract_face_features(labels_df, images)
     save_datasets(face_labels, face_features, celeba_features_train_label_dir, celeba_features_train_img_dir)
-
-
 
 
 

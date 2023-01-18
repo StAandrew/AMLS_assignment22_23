@@ -28,9 +28,9 @@ cartoon_test_img_dir = os.path.join(datasets_dir, "cartoon_set", "img")
 # Specify extra directories
 celeba_features_dir = os.path.join(datasets_dir, "celeba_features")
 celeba_features_train_label_dir = os.path.join(datasets_dir, "celeba_features", "labels.csv")
-celeba_features_train_img_dir = os.path.join(datasets_dir, "celeba_features", "features.dat")
+celeba_features_train_img_dir = os.path.join(datasets_dir, "celeba_features", "features.npz")
 celeba_features_test_label_dir = os.path.join(datasets_dir, "celeba_test_smile", "labels.csv")
-celeba_features_test_img_dir = os.path.join(datasets_dir, "celeba_test_smile", "features.dat")
+celeba_features_test_img_dir = os.path.join(datasets_dir, "celeba_test_smile", "features.npz")
 
 cartoon_features_dir = os.path.join(datasets_dir, "cartoon_set_no_glasses")
 cartoon_features_train_label_dir = os.path.join(datasets_dir, "cartoon_set_no_glasses", "labels.csv")
@@ -83,3 +83,4 @@ def initial_config(warnings_off=True, cpu_only_training=False):
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise Exception(f"Error creating directories: {e}")
+
