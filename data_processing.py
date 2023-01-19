@@ -4,6 +4,8 @@ from cv2 import IMREAD_COLOR, IMREAD_GRAYSCALE
 import dlib
 import os
 import numpy as np
+import tensorflow as tf
+from sklearn.model_selection import train_test_split
 
 
 # how to find frontal human faces in an image using 68 landmarks.  These are points on the face such as the corners of the mouth, along the eyebrows, on the eyes, and so forth.
@@ -107,10 +109,10 @@ def load_raw_datasets(dataset_img_path, dataset_labels_path, filename_column_nam
             images.append(img_gray)
         else:
             images.append(img)
-    return labels_df, images
+    return images, labels_df
     
 
-def save_datasets(labels_df, feature_arr, dataset_labels_path, dataset_feature_arr_path):
+def save_datasets(feature_arr, labels_df, dataset_labels_path, dataset_feature_arr_path):
     """ This function saves the labels and features to disk. 
     :param labels_df:               dataframe containing the labels
     :param feature_arr:            array containing the features
@@ -121,7 +123,7 @@ def save_datasets(labels_df, feature_arr, dataset_labels_path, dataset_feature_a
     np.savez(dataset_feature_arr_path, feature_arr)
 
 
-def load_datasets(dataset_labels_path, dataset_features_arr_path):
+def load_datasets(dataset_features_arr_path, dataset_labels_path):
     """ This function loads the labels and features from disk.
     :param dataset_labels_path:     path to the CSV file containing the labels
     :param dataset_feature_arr_path: path to the array containing the features
@@ -133,10 +135,10 @@ def load_datasets(dataset_labels_path, dataset_features_arr_path):
         feature_arr = feature_arr_file['arr_0']
     except:
         return None, None
-    return labels_df, feature_arr
+    return feature_arr, labels_df
 
 
-def extract_face_features(labels, images):
+def extract_face_features(images, labels):
     """
         Extracts face features from images where at least one face is detected.
         The images extracted are placed in a new dedicated folder and are all in 'grayscale'.
@@ -149,7 +151,89 @@ def extract_face_features(labels, images):
             all_features.append(features)
             all_labels = pd.concat([all_labels, labels.iloc[[i], :]], axis=0, ignore_index=True)
     all_features = np.array(all_features)
-    return all_labels, all_features
+    return all_features, all_labels
+
+def extract_jawline_features(feature_arr):
+    """
+    This function extracts the jawline features from the landmark features.
+    :param feature_arr:     array containing the landmark features
+    :return:                array containing the jawline features
+    """
+    start_index = 0
+    end_index = 16
+    jawline_arr = []
+    for i in range(len(feature_arr)):
+        jawline_arr.append(feature_arr[i][start_index:end_index+1])
+    np.array(jawline_arr)
+    return jawline_arr
+
+
+def extract_smile_features(feature_arr):
+    """
+    This function extracts the smile features from the landmark features.
+    :param feature_arr:     array containing the landmark features
+    :return:                array containing the smile features
+    """
+    start_index = 48
+    end_index = 64
+    smile_arr = []
+    for i in range(len(feature_arr)):
+        smile_arr.append(feature_arr[i][start_index:end_index+1])
+    return smile_arr
+
+
+def shuffle_split_into_batches(images_dataset, labels_dataset, column_name, batch_size):
+    """
+    This function splits the dataset into batches using the train_test_split, 
+    from_tensor_slices, shuffle and batch functions.
+    :param images_dataset:      array containing the images
+    :param labels_dataset:      dataframe containing the labels
+    :param column_name:         name of the column containing the labels
+    :param batch_size:          size of the batches
+    :return:                    batches of images and labels
+    """
+    # Put 60% of dataset into training set
+    img_train, img_rest_of_dataset, label_train, labels_rest_of_dataset = train_test_split(
+        images_dataset,
+        labels_dataset[column_name].values,
+        test_size=0.40,
+        random_state=0,
+        shuffle=True,
+    )
+    # Put the rest of dataset into validation and test set
+    img_validate, img_test, label_validate, label_test = train_test_split(
+        img_rest_of_dataset,
+        labels_rest_of_dataset,
+        test_size=0.50,
+        random_state=0,
+        shuffle=True,
+    )
+    # make batches
+    training_data = tf.data.Dataset.from_tensor_slices((img_train, label_train))
+    training_batches = (
+        training_data.shuffle(len(training_data)).batch(batch_size, drop_remainder=True).prefetch(1)
+    )
+    validation_data = tf.data.Dataset.from_tensor_slices((img_validate, label_validate))
+    validation_batches = (
+        validation_data.shuffle(len(validation_data)).batch(batch_size, drop_remainder=True).prefetch(1)
+    )
+    test_data = tf.data.Dataset.from_tensor_slices((img_test, label_test))
+    test_batches = (
+        test_data.shuffle(len(test_data)).batch(batch_size, drop_remainder=True).prefetch(1)
+    )
+    return training_batches, validation_batches, test_batches
+
+
+def batches_to_arrays(batches):
+    """
+    This function converts the batches into arrays.
+    :param batches:     batches of images and labels
+    :return:            arrays of images and labels
+    """
+    batches = batches.unbatch()
+    images = np.array(list(x for x, y in batches))
+    labels = np.array(list(y for x, y in batches))
+    return images, labels
 
 
 # Feature extraction for training data

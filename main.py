@@ -8,14 +8,17 @@ from data_processing import *
 
 initial_config()
 
-#  A1 & A2
-labels_df, feature_arr = load_datasets(celeba_features_train_label_dir, celeba_features_train_img_dir)
-if labels_df is None or feature_arr is None:
+#  prepare data for A1 & A2
+face_features, face_labels = load_datasets(celeba_features_train_img_dir, celeba_features_train_label_dir)
+if face_features is None or face_labels is None:
+    images, labels_df = load_raw_datasets(celeba_train_img_dir, celeba_train_label_dir, "img_name")
+    face_features, face_labels = extract_face_features(images, labels_df)
+    save_datasets(face_features, face_labels, celeba_features_train_label_dir, celeba_features_train_img_dir)
+jawline_arr = extract_jawline_features(face_features)
+smile_arr = extract_smile_features(face_features)
 
-    labels_df, images = load_raw_datasets(celeba_train_img_dir, celeba_train_label_dir, "img_name")
-    face_labels, face_features = extract_face_features(labels_df, images)
-    save_datasets(face_labels, face_features, celeba_features_train_label_dir, celeba_features_train_img_dir)
-
+batch_size = 30
+jawline_train_batches, jawline_verify_batches, jawline_test_batches = shuffle_split_into_batches(jawline_arr, face_labels, "gender", batch_size)
 
 
 exit()
