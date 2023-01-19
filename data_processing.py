@@ -164,7 +164,7 @@ def extract_jawline_features(feature_arr):
     jawline_arr = []
     for i in range(len(feature_arr)):
         jawline_arr.append(feature_arr[i][start_index:end_index+1])
-    np.array(jawline_arr)
+    jawline_arr = np.array(jawline_arr)
     return jawline_arr
 
 
@@ -192,22 +192,52 @@ def shuffle_split_into_batches(images_dataset, labels_dataset, column_name, batc
     :param batch_size:          size of the batches
     :return:                    batches of images and labels
     """
+    images_dataset = np.expand_dims(images_dataset, axis=3)
+    for i in range(len(images_dataset)):
+        images_dataset[i][0][0][0] = int(labels_dataset.loc[i, 'img_name'][:-4])
     # Put 60% of dataset into training set
     img_train, img_rest_of_dataset, label_train, labels_rest_of_dataset = train_test_split(
         images_dataset,
-        labels_dataset[column_name].values,
+        labels_dataset,
         test_size=0.40,
-        random_state=0,
-        shuffle=True,
+        random_state=42,
+        shuffle=False,
     )
+    print(label_train.loc[:, 'img_name'])
+    exit(0)
+    print(label_train.loc[100, 'img_name'][:-4])
+    exit(0)
+    check_ints = []
+    for i in range(20):
+        intx = random.randint(0, 5000)
+        check_ints.append(intx)
+    for i in check_ints:
+        try:
+            val = int(label_train.loc[i, 'img_name'][:-4])
+            print(f"img_train {img_train[i][0][0][0]}")
+            print(f"label {val}")
+        except KeyError:
+            continue
+    # check_ints2 = [4000, 4264, 4628, 4756, 3758, 3768, 4045, 4134, 4516]
+    # for i in check_ints2:
+    #     print(img_rest_of_dataset[i][0][0][0])
+    #     print(labels_rest_of_dataset.loc[i, 'img_name'][:-4])
+    exit()
+    # labels_rest_of_dataset.reset_index(inplace=True)
+    print(img_rest_of_dataset)
+    print(labels_rest_of_dataset["img_name"].values)
+    print(labels_rest_of_dataset[column_name].values)
     # Put the rest of dataset into validation and test set
     img_validate, img_test, label_validate, label_test = train_test_split(
         img_rest_of_dataset,
         labels_rest_of_dataset,
         test_size=0.50,
         random_state=0,
-        shuffle=True,
+        shuffle=False,
     )
+    # print(labels_rest_of_dataset["img_name"].values)
+    # print(labels_rest_of_dataset[column_name].values)
+    exit()
     # make batches
     training_data = tf.data.Dataset.from_tensor_slices((img_train, label_train))
     training_batches = (
