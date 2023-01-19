@@ -101,25 +101,26 @@ def load_raw_datasets(dataset_img_path, dataset_labels_path, filename_column_nam
     """
     labels_df = pd.read_csv(dataset_labels_path, skipinitialspace=True, sep="\t").drop(['Unnamed: 0'],axis=1)
     # labels = labels_df[label_column_name].values
-    images = []
+    images = np.zeros((len(labels_df), 218, 178, 1))
+    i = 0
     for label_name in labels_df[filename_column_name]:
         img = cv2.imread(os.path.join(dataset_img_path, label_name), IMREAD_COLOR)
+        image_number = int(labels_df.loc[i, filename_column_name][:-4])
         if grayscale:
             img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            images.append(img_gray)
+            images[i, :, :, 0] = img_gray
         else:
-            images.append(img)
+            images[i, :, :, 0] = img
+        images[i][0][0][0] = image_number
+        i += 1
     return images, labels_df
     
 
-def save_datasets(feature_arr, labels_df, dataset_labels_path, dataset_feature_arr_path):
+def save_dataset(feature_arr, dataset_feature_arr_path):
     """ This function saves the labels and features to disk. 
-    :param labels_df:               dataframe containing the labels
-    :param feature_arr:            array containing the features
-    :param dataset_labels_path:     path to the CSV file containing the labels
-    :param dataset_feature_arr_path: path to the array containing the features
+    :param labels_df:                   dataframe containing the labels
+    :param dataset_feature_arr_path:    path to the array containing the features
     """
-    labels_df.to_csv(dataset_labels_path, sep="\t", index=False)
     np.savez(dataset_feature_arr_path, feature_arr)
 
 
@@ -127,31 +128,34 @@ def load_datasets(dataset_features_arr_path, dataset_labels_path):
     """ This function loads the labels and features from disk.
     :param dataset_labels_path:     path to the CSV file containing the labels
     :param dataset_feature_arr_path: path to the array containing the features
-    :return:                        labels and features
+    :return:                        features and labels
     """
     try:
         labels_df = pd.read_csv(dataset_labels_path, skipinitialspace=True, sep="\t")
         feature_arr_file = np.load(dataset_features_arr_path, allow_pickle = True)
         feature_arr = feature_arr_file['arr_0']
+        feature_arr = np.array(feature_arr)
     except:
         return None, None
     return feature_arr, labels_df
 
 
-def extract_face_features(images, labels):
+def extract_face_features(images):
     """
         Extracts face features from images where at least one face is detected.
         The images extracted are placed in a new dedicated folder and are all in 'grayscale'.
     """
-    all_features = []
-    all_labels = pd.DataFrame()
+    all_features = np.zeros((len(images), 68, 2, 1))
+    new_i = 0
     for i in range(len(images)):
-        features, _ = run_dlib_shape(images[i])
+        image = images[i, :, :, 0]
+        features, _ = run_dlib_shape(image)
         if features is not None:
-            all_features.append(features)
-            all_labels = pd.concat([all_labels, labels.iloc[[i], :]], axis=0, ignore_index=True)
-    all_features = np.array(all_features)
-    return all_features, all_labels
+            all_features[new_i, :, :, 0] = features
+            new_i += 1
+    all_features = all_features[:new_i]
+    return all_features
+
 
 def extract_jawline_features(feature_arr):
     """
@@ -175,69 +179,63 @@ def extract_smile_features(feature_arr):
     :return:                array containing the smile features
     """
     start_index = 48
-    end_index = 64
+    end_index = 67
     smile_arr = []
     for i in range(len(feature_arr)):
         smile_arr.append(feature_arr[i][start_index:end_index+1])
+    smile_arr = np.array(smile_arr)
     return smile_arr
 
 
-def shuffle_split_into_batches(images_dataset, labels_dataset, column_name, batch_size):
+def shuffle_split(images_dataset, labels_df, column_name, test_size):
     """
-    This function splits the dataset into batches using the train_test_split, 
-    from_tensor_slices, shuffle and batch functions.
+    This function splits the dataset into a training and a test set.
     :param images_dataset:      array containing the images
-    :param labels_dataset:      dataframe containing the labels
+    :param labels_df:           dataframe containing the labels
     :param column_name:         name of the column containing the labels
-    :param batch_size:          size of the batches
-    :return:                    batches of images and labels
+    :param test_size:           percentage of the dataset to be used as test set
+    :return:                    training and test set
     """
-    images_dataset = np.expand_dims(images_dataset, axis=3)
+    # temporarily add another dimension to the images array
+    images_dataset = images_dataset[:, :, :, np.newaxis]
+    # store the labels in the last dimension of the images array
     for i in range(len(images_dataset)):
-        images_dataset[i][0][0][0] = int(labels_dataset.loc[i, 'img_name'][:-4])
-    # Put 60% of dataset into training set
-    img_train, img_rest_of_dataset, label_train, labels_rest_of_dataset = train_test_split(
-        images_dataset,
-        labels_dataset,
-        test_size=0.40,
-        random_state=42,
-        shuffle=False,
-    )
-    print(label_train.loc[:, 'img_name'])
-    exit(0)
-    print(label_train.loc[100, 'img_name'][:-4])
-    exit(0)
-    check_ints = []
-    for i in range(20):
-        intx = random.randint(0, 5000)
-        check_ints.append(intx)
-    for i in check_ints:
-        try:
-            val = int(label_train.loc[i, 'img_name'][:-4])
-            print(f"img_train {img_train[i][0][0][0]}")
-            print(f"label {val}")
-        except KeyError:
-            continue
-    # check_ints2 = [4000, 4264, 4628, 4756, 3758, 3768, 4045, 4134, 4516]
-    # for i in check_ints2:
-    #     print(img_rest_of_dataset[i][0][0][0])
-    #     print(labels_rest_of_dataset.loc[i, 'img_name'][:-4])
-    exit()
-    # labels_rest_of_dataset.reset_index(inplace=True)
-    print(img_rest_of_dataset)
-    print(labels_rest_of_dataset["img_name"].values)
-    print(labels_rest_of_dataset[column_name].values)
-    # Put the rest of dataset into validation and test set
-    img_validate, img_test, label_validate, label_test = train_test_split(
-        img_rest_of_dataset,
-        labels_rest_of_dataset,
-        test_size=0.50,
-        random_state=0,
-        shuffle=False,
-    )
-    # print(labels_rest_of_dataset["img_name"].values)
-    # print(labels_rest_of_dataset[column_name].values)
-    exit()
+        images_dataset[i][0][0][0] = int(labels_df.loc[i, column_name])
+    # calculate the number of elements in the test set
+    test_element_number = int(len(images_dataset) * test_size)
+    # shuffle before splitting
+    np.random.shuffle(images_dataset)
+    img_train, img_test = images_dataset[test_element_number:, ...], images_dataset[:test_element_number, ...]
+    # shuffle once more for good measure
+    np.random.shuffle(img_train)
+    np.random.shuffle(img_test)
+    # add labels into another array
+    label_train = []
+    label_test = []
+    for i in range(len(img_train)):
+        label_train.append(img_train[i][0][0][0])
+    for i in range(len(img_test)):
+        label_test.append(img_test[i][0][0][0])
+    label_train = np.array(label_train)
+    label_test = np.array(label_test)
+    # remove the labels from the images array
+    img_train = img_train[:, :, :, 0]
+    img_test = img_test[:, :, :, 0]
+    return img_train, img_test, label_train, label_test
+
+
+def data_reshape(data):
+    """
+    This function reshapes the data to be used in the SVC.
+    :param data:    array containing the data
+    :return:        reshaped array
+    """
+    nsamples, nx, ny = data.shape
+    reshaped_data = data.reshape(nsamples,nx*ny)
+    return reshaped_data
+
+
+def shuffle_split_into_batches():
     # make batches
     training_data = tf.data.Dataset.from_tensor_slices((img_train, label_train))
     training_batches = (
