@@ -4,7 +4,7 @@ from sklearn import svm
 
 from A1.a1 import A1
 # from A2.a2 import A2
-# from B1.b1 import B1
+from B1.b1 import B1
 # from B2.b2 import B2
 
 logger = initial_config()
@@ -13,20 +13,35 @@ run_a2 = False
 run_b1 = True
 run_b2 = False
 
-#  prepare training and verification data for A1 & A2
+# Prepare training and verification data for A1 & A2
 celeba_features, labels_df = load_datasets(celeba_features_train_dir, celeba_train_label_dir)
 if celeba_features is None or labels_df is None:
     logger.info("Celeba features not found, loading raw data and extracting features...")
-    images, labels_df = load_raw_datasets(celeba_train_img_dir, celeba_train_label_dir, "img_name")
+    images, labels_df = load_raw_datasets(celeba_train_img_dir, celeba_train_label_dir, "img_name", "gender", "smiling")
     celeba_features = extract_face_features(images)
     save_dataset(celeba_features, celeba_features_train_dir)
 
 celeba_features_test, labels_df_test = load_datasets(celeba_features_test_dir, celeba_test_label_dir)
 if celeba_features_test is None or labels_df_test is None:
     logger.info("Celeba test features not found, loading raw data and extracting features...")
-    images, labels_df_test = load_raw_datasets(celeba_test_img_dir, celeba_test_label_dir, "img_name")
+    images, labels_df_test = load_raw_datasets(celeba_test_img_dir, celeba_test_label_dir, "img_name", "gender", "smiling")
     celeba_features_test = extract_face_features(images)
     save_dataset(celeba_features_test, celeba_features_test_dir)
+
+# Prepare training and verification data for B1 & B2
+cartoon_features, cartoon_labels_df = load_datasets(cartoon_features_train_dir, cartoon_train_label_dir)
+if cartoon_features is None or cartoon_labels_df is None:
+    logger.info("Cartoon features not found, loading raw data and extracting features...")
+    images, cartoon_labels_df = load_raw_datasets(cartoon_train_img_dir, cartoon_train_label_dir, "file_name", "eye_color", "face_shape")
+    cartoon_features = extract_face_features(images)
+    save_dataset(cartoon_features, cartoon_features_train_dir)
+
+cartoon_features_test, cartoon_labels_df_test = load_datasets(cartoon_features_test_dir, cartoon_test_label_dir)
+if cartoon_features_test is None or cartoon_labels_df_test is None:
+    logger.info("Cartoon test features not found, loading raw data and extracting features...")
+    images, cartoon_labels_df_test = load_raw_datasets(cartoon_test_img_dir, cartoon_test_label_dir, "file_name", "eye_color", "face_shape")
+    cartoon_features_test = extract_face_features(images)
+    save_dataset(cartoon_features_test, cartoon_features_test_dir)
 
 if run_a1:
     # A1
@@ -35,11 +50,11 @@ if run_a1:
     label_name = "gender"
 
     jawline_arr = extract_jawline_features(celeba_features)
-    jawline_data_train, _, jawline_label_train, _ = shuffle_split(jawline_arr, labels_df, label_name, test_size, logger)
+    jawline_data_train, _, jawline_label_train, _ = shuffle_split(jawline_arr, labels_df, "img_name", "gender", "smiling", label_name, test_size, logger)
     jawline_data_train = data_reshape(jawline_data_train)
 
     jawline_arr_test = extract_jawline_features(celeba_features_test)
-    jawline_data_test, _, jawline_label_test, _ = shuffle_split(jawline_arr_test, labels_df_test, label_name, 0, logger)
+    jawline_data_test, _, jawline_label_test, _ = shuffle_split(jawline_arr_test, labels_df_test, "img_name", "gender", "smiling", label_name, 0, logger)
     jawline_data_test = data_reshape(jawline_data_test)
 
     model = svm.SVC()
@@ -63,11 +78,11 @@ if run_a2:
     label_name = "smiling"
 
     smile_arr = extract_smile_features(celeba_features)
-    smile_data_train, _, smile_label_train, _ = shuffle_split(smile_arr, labels_df, label_name, test_size, logger)
+    smile_data_train, _, smile_label_train, _ = shuffle_split(smile_arr, labels_df, "img_name", "gender", "smiling", label_name, test_size, logger)
     smile_data_train = data_reshape(smile_data_train)
 
     smile_arr_test = extract_smile_features(celeba_features_test)
-    smile_data_test, _, smile_label_test, _ = shuffle_split(smile_arr_test, labels_df_test, label_name, 0, logger)
+    smile_data_test, _, smile_label_test, _ = shuffle_split(smile_arr_test, labels_df_test, "img_name", "gender", "smiling", label_name, 0, logger)
     smile_data_test = data_reshape(smile_data_test)
 
     model = svm.SVC()
@@ -86,12 +101,44 @@ if run_a2:
 
 if run_b1:
     # B1
-    labels, images = load_daload_raw_datasetstasets(cartoon_train_img_dir, cartoon_train_label_dir, "face_shape", "file_name")
-    test_labels, test_images = load_raw_datasets(cartoon_test_img_dir, cartoon_test_label_dir, "face_shape", "file_name")
+    validation_size = 0.2
+    batch_size = 32
+    epochs = 10
+
+    label_name = "face_shape"
+    cartoon_data_train, cartoon_data_verify, cartoon_label_train, cartoon_label_verify = shuffle_split(cartoon_features_test, cartoon_labels_df_test, "file_name", "eye_color", "face_shape", label_name, validation_size, logger)
+    cartoon_data_test, _, cartoon_label_test, _ = shuffle_split(cartoon_features_test, cartoon_labels_df_test, "file_name", "eye_color", "face_shape", label_name, 0, logger)
+
+    dataset_train = tf.data.Dataset.from_tensor_slices((cartoon_data_train, cartoon_label_train))
+    dataset_valuation = tf.data.Dataset.from_tensor_slices((cartoon_data_verify, cartoon_label_verify))
+    dataset_test = tf.data.Dataset.from_tensor_slices((cartoon_data_test, cartoon_label_test))
+
+    training_batches = dataset_train.shuffle(buffer_size=1000).batch(batch_size)
+    validation_batches = dataset_valuation.shuffle(buffer_size=1000).batch(batch_size)
+    test_batches = dataset_test.shuffle(buffer_size=1000).batch(batch_size)
+
+    # early_stop_callback = EarlyStopping(
+    #     monitor="val_loss", restore_best_weights=True, patience=5, verbose=1
+    # )
+    input_shape = (cartoon_data_train.shape[0], cartoon_data_train.shape[1], cartoon_data_train.shape[2])
+    # logger.debug(training_batches)
+    input_shape = (68, 2, 0)
+
+    model = B1(input_shape)
+
+    acc_B1_train, acc_B1_valid = model.train(
+        training_batches, validation_batches, epochs=epochs, verbose=2, plot=True
+    )
+    model.model.save_weights(b1_model_path)
+    acc_B1_test = model.test(test_batches, verbose=2, confusion_mesh=True)
+    logger.info("model tested, accuracy: ", acc_B2_test)
 
 if run_b2:
     # B2
-    labels, images = load_raw_datasets(cartoon_train_img_dir, cartoon_train_label_dir, "eye_color", "file_name", grayscale=False)
-    test_labels, test_images = load_raw_datasets(cartoon_test_img_dir, cartoon_test_label_dir, "eye_color", "file_name", grayscale=False)
+    # Prepare RGB pirctures for B2
+    cartoon_images, _ = load_raw_datasets(cartoon_train_img_dir, cartoon_train_label_dir, "file_name", "eye_color", "face_shape", grayscale=False)
+
+    # labels, images = load_raw_datasets(cartoon_train_img_dir, cartoon_train_label_dir, "eye_color", "file_name", grayscale=False)
+    # test_labels, test_images = load_raw_datasets(cartoon_test_img_dir, cartoon_test_label_dir, "eye_color", "file_name", grayscale=False)
 
 logger.info("Finished.")
