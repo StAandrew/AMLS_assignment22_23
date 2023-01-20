@@ -100,7 +100,6 @@ def load_raw_datasets(dataset_img_path, dataset_labels_path, filename_column_nam
     :return:                        labels and images
     """
     labels_df = pd.read_csv(dataset_labels_path, skipinitialspace=True, sep="\t").drop(['Unnamed: 0'],axis=1)
-    # labels = labels_df[label_column_name].values
     images = np.zeros((len(labels_df), 218, 178, 4))
     i = 0
     for label_name in labels_df[filename_column_name]:

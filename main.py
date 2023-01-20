@@ -1,6 +1,5 @@
 from helper_utils import *
 from data_processing import *
-
 from sklearn import svm
 
 from A1.a1 import A1
@@ -10,7 +9,9 @@ from A1.a1 import A1
 
 logger = initial_config()
 run_a1 = False
-run_a2 = True
+run_a2 = False
+run_b1 = True
+run_b2 = False
 
 #  prepare training and verification data for A1 & A2
 celeba_features, labels_df = load_datasets(celeba_features_train_dir, celeba_train_label_dir)
@@ -29,6 +30,7 @@ if celeba_features_test is None or labels_df_test is None:
 
 if run_a1:
     # A1
+    logger.info("Running A1: Gender Classification")
     test_size = 0 # because grid search will be used
     label_name = "gender"
 
@@ -42,72 +44,54 @@ if run_a1:
 
     model = svm.SVC()
     a1 = A1(jawline_data_train, jawline_label_train, jawline_data_test, jawline_label_test, logger)
+    logger.info("Loading A1 model...")
     if not a1.load_model(a1_model_path):
         logger.info("A1 model not found, training using grid search...")
         a1.train_grid_fit(model)
         a1.save_model(a1_model_path)
     a1.evaluate_best_model()
     a1.output_info()
-    a1.plot()
+    a1.plot_learning(a1_figure_learning_path, a1_figure_learning_file_path)
+    a1.plot_confusion_matrix(a1_figure_confusion_matrix_path)
+    a1.plot_grid_c(a1_figure_c_performance_path)
+    a1.plot_grid_gamma(a1_figure_gamma_performance_path)
 
 if run_a2:
-# A2
-test_size = 0 # because grid search will be used
-label_name = "smiling"
+    # A2
+    logger.info("Running A2: Smile detection")
+    test_size = 0 # because grid search will be used
+    label_name = "smiling"
 
-smile_arr = extract_smile_features(celeba_features)
-smile_data_train, _, smile_label_train, _ = shuffle_split(smile_arr, labels_df, label_name, test_size, logger)
-smile_data_train = data_reshape(smile_data_train)
+    smile_arr = extract_smile_features(celeba_features)
+    smile_data_train, _, smile_label_train, _ = shuffle_split(smile_arr, labels_df, label_name, test_size, logger)
+    smile_data_train = data_reshape(smile_data_train)
 
-smile_arr_test = extract_smile_features(celeba_features_test)
-smile_data_test, _, smile_label_test, _ = shuffle_split(smile_arr_test, labels_df_test, label_name, 0, logger)
-smile_data_test = data_reshape(smile_data_test)
+    smile_arr_test = extract_smile_features(celeba_features_test)
+    smile_data_test, _, smile_label_test, _ = shuffle_split(smile_arr_test, labels_df_test, label_name, 0, logger)
+    smile_data_test = data_reshape(smile_data_test)
 
-model = svm.SVC()
-a2 = A1(smile_data_train, smile_label_train, smile_data_test, smile_label_test, logger)
-if not a2.load_model(a2_model_path):
-    logger.info("A2 model not found, training using grid search...")
-    a2.train_grid_fit(model)
-    a2.save_model(a2_model_path)
-a2.evaluate_best_model()
-a2.output_info()
-a2.plot()
+    model = svm.SVC()
+    a2 = A1(smile_data_train, smile_label_train, smile_data_test, smile_label_test, logger)
+    logger.info("Loading A2 model...")
+    if not a2.load_model(a2_model_path):
+        logger.info("A2 model not found, training using grid search...")
+        a2.train_grid_fit(model)
+        a2.save_model(a2_model_path)
+    a2.evaluate_best_model()
+    a2.output_info()
+    a2.plot_learning(a2_figure_learning_path, a2_figure_learning_file_path)
+    a2.plot_confusion_matrix(a2_figure_confusion_matrix_path)
+    a2.plot_grid_c(a2_figure_c_performance_path)
+    a2.plot_grid_gamma(a2_figure_gamma_performance_path)
 
-exit()
-# a1 = A1()
-# a1.train(jawline_data_train, jawline_label_train)
-# verify_accuracy = a1.test(jawline_data_verify, jawline_label_verify)
-# print("A1 accuracy on verification data: {:2f}%".format(verify_accuracy * 100))
-# test_accuracy = a1.test(jawline_data_test, jawline_label_test)
-# print("A1 accuracy on test data: {:2f}%".format(test_accuracy * 100))
+if run_b1:
+    # B1
+    labels, images = load_daload_raw_datasetstasets(cartoon_train_img_dir, cartoon_train_label_dir, "face_shape", "file_name")
+    test_labels, test_images = load_raw_datasets(cartoon_test_img_dir, cartoon_test_label_dir, "face_shape", "file_name")
 
-# A2
-smile_data_train = data_reshape(smile_data_train)
-smile_data_verify = data_reshape(smile_data_verify)
-smile_data_test = data_reshape(smile_data_test)
+if run_b2:
+    # B2
+    labels, images = load_raw_datasets(cartoon_train_img_dir, cartoon_train_label_dir, "eye_color", "file_name", grayscale=False)
+    test_labels, test_images = load_raw_datasets(cartoon_test_img_dir, cartoon_test_label_dir, "eye_color", "file_name", grayscale=False)
 
-a2 = A1()
-a2.train(smile_data_train, smile_label_train)
-verify_accuracy = a2.test(smile_data_verify, smile_label_verify)
-print("A2 accuracy on verification data: {:2f}%".format(verify_accuracy * 100))
-test_accuracy = a2.test(smile_data_test, smile_label_test)
-print("A2 accuracy on test data: {:2f}%".format(test_accuracy * 100))
-
-
-exit()
-test_labels, test_images = load_raw_datasets(celeba_test_img_dir, celeba_test_label_dir, "gender", "img_name")
-
-
-# A2
-labels, images = load_raw_datasets(celeba_train_img_dir, celeba_train_label_dir, "smiling", "img_name")
-test_labels, test_images = load_raw_datasets(celeba_test_img_dir, celeba_test_label_dir, "smiling", "img_name")
-
-
-# B1
-labels, images = load_daload_raw_datasetstasets(cartoon_train_img_dir, cartoon_train_label_dir, "face_shape", "file_name")
-test_labels, test_images = load_raw_datasets(cartoon_test_img_dir, cartoon_test_label_dir, "face_shape", "file_name")
-
-
-# B2
-labels, images = load_raw_datasets(cartoon_train_img_dir, cartoon_train_label_dir, "eye_color", "file_name", grayscale=False)
-test_labels, test_images = load_raw_datasets(cartoon_test_img_dir, cartoon_test_label_dir, "eye_color", "file_name", grayscale=False)
+logger.info("Finished.")
