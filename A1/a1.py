@@ -1,69 +1,77 @@
 import numpy as np
 import pandas as pd
-from sklearn import svm
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import learning_curve
+from sklearn.metrics import classification_report, confusion_matrix
+import joblib
+import matplotlib.pyplot as plt
 import os
-import cv2
-from cv2 import IMREAD_GRAYSCALE, IMREAD_COLOR
 import time
 
-VERIFICATION_SPLIT = 0.2
+# defining parameter range
+C = [0.01, 0.1, 1, 10]
+gamma = [10, 1, 0.1, 0.01]
+kernel = ["linear"]
 
+class A1():
+    def __init__(self, train_data, train_labels, test_data, test_labels, logger):
+        self.train_data = train_data
+        self.train_labels = train_labels
+        self.test_data = test_data
+        self.test_labels = test_labels
+        self.logger = logger
+    
+    def train_grid_fit(self, model):
+        param_grid = {
+            "C": C,
+            "gamma": gamma,
+            "kernel": kernel,
+        }
 
-def load_data(root_path):
-    # Create paths
-    dataset_img_path = os.path.join(root_path, "img")
-    dataset_labels_path = os.path.join(root_path, "labels.csv")
-    # Load the labels
-    labels = pd.read_csv(dataset_labels_path, skipinitialspace=True, sep="\t")
-    # Load the images
-    image_read = []
-    for image_name in labels["img_name"]:
-        image = cv2.imread(os.path.join(dataset_img_path, image_name), IMREAD_COLOR)
-        image_read.append(image)
+        grid = GridSearchCV(model, param_grid, refit=True, verbose=3, cv=5)
+        grid.fit(self.train_data, self.train_labels)
+        self.grid = grid
+        self.results = grid.cv_results_
+    
+    def evaluate_best_model(self):        
+        self.best_model = self.grid.best_estimator_.score(self.test_data, self.test_labels)
 
-    images = np.array(image_read)
-    return labels, images
+        label_test_predict = self.grid.predict(self.test_data)
+        self.conf_matrix = confusion_matrix(self.test_labels, label_test_predict)
 
+    def save_model(self, model_path):
+        joblib.dump(self.grid, model_path, compress=1)
 
-# Create paths for cross-os support
-parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    def load_model(self, model_path):
+        try:
+            self.grid = joblib.load(model_path)
+            self.results = self.grid.cv_results_
+            return True
+        except:
+            return False
 
-# Load development and test datasets
-dataset_root_path = os.path.join(parent_dir, "Datasets", "celeba")
-labels, images = load_data(dataset_root_path)
+    def output_info(self):
+        self.logger.info("Best parameters after tuning:")
+        self.logger.info(self.grid.best_params_)
+        self.logger.info("Verify score with best model:")
+        self.logger.info(self.grid.best_estimator_)
+        self.logger.info("Best model:")
+        self.logger.info(self.best_model)
+        self.logger.info("CV Results:")
+        self.logger.info(self.grid.cv_results_)
+        for mean_score, params in zip(self.results["mean_test_score"], self.results["params"]):
+            self.logger.info(f"mean_score: {mean_score:.3f}, params: {params}")
 
-test_root_path = os.path.join(parent_dir, "Datasets", "celeba_test")
-test_labels, test_images = load_data(test_root_path)
+    def plot(self):
+        train_sizes, train_scores, val_scores = learning_curve(
+            self.grid.best_estimator_, self.train_data, self.train_labels, cv=5
+        )
 
-n_samples, img_height, img_width, n_channels = images.shape
-images_dataset = images.reshape(n_samples, img_height * img_width * n_channels)
-
-# Split the data into training and test sets
-img_train, img_verify, label_train, label_verify = train_test_split(
-    images_dataset,
-    labels["gender"].values,
-    test_size=VERIFICATION_SPLIT,
-    random_state=0,
-    shuffle=True,
-)
-img_train = np.array(img_train)
-img_verify = np.array(img_verify)
-label_train = np.array(label_train)
-label_verify = np.array(label_verify)
-
-print("Loaded. Starting training...")
-# exit(0)
-time.sleep(3)
-
-# Create and train SVM model
-model = svm.SVC(kernel="linear")
-model.fit(img_train, label_train)
-
-# Evaluate the model on the test set
-print("Training finished. Evaluating...")
-label_pred = model.predict(img_verify)
-accuracy = accuracy_score(label_verify, label_pred)
-print("Accuracy: {:2f}%".format(accuracy * 100))
-
+        plt.plot(train_sizes, train_scores.mean(axis=1), label="Training Score")
+        plt.plot(train_sizes, val_scores.mean(axis=1), label="Validation Score")
+        plt.xlabel("Number of Training Examples")
+        plt.ylabel("Score")
+        plt.legend()
+        plt.title("SVM learning curve", fontsize=32)
+        plt.savefig("A1/SVC_learningcurve.png")
