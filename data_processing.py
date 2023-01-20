@@ -101,17 +101,21 @@ def load_raw_datasets(dataset_img_path, dataset_labels_path, filename_column_nam
     """
     labels_df = pd.read_csv(dataset_labels_path, skipinitialspace=True, sep="\t").drop(['Unnamed: 0'],axis=1)
     # labels = labels_df[label_column_name].values
-    images = np.zeros((len(labels_df), 218, 178, 1))
+    images = np.zeros((len(labels_df), 218, 178, 4))
     i = 0
     for label_name in labels_df[filename_column_name]:
         img = cv2.imread(os.path.join(dataset_img_path, label_name), IMREAD_COLOR)
         image_number = int(labels_df.loc[i, filename_column_name][:-4])
+        gender_label = int(labels_df.loc[i, "gender"])
+        smiling_label = int(labels_df.loc[i, "smiling"])
         if grayscale:
             img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             images[i, :, :, 0] = img_gray
         else:
             images[i, :, :, 0] = img
-        images[i][0][0][0] = image_number
+        images[i][0][0][1] = image_number
+        images[i][0][0][2] = gender_label
+        images[i][0][0][3] = smiling_label
         i += 1
     return images, labels_df
     
@@ -142,15 +146,18 @@ def load_datasets(dataset_features_arr_path, dataset_labels_path):
 
 def extract_face_features(images):
     """
-        Extracts face features from images where at least one face is detected.
-        The images extracted are placed in a new dedicated folder and are all in 'grayscale'.
+    This function extracts the face features from the images.
+    :param images:      array containing the images and labels
+    :return:            array containing the face features
     """
-    all_features = np.zeros((len(images), 68, 2, 1))
+    all_features = np.zeros((len(images), 68, 2, 4))
     new_i = 0
     for i in range(len(images)):
         image = images[i, :, :, 0]
         features, _ = run_dlib_shape(image)
         if features is not None:
+            for j in range(len(images[i, 0, 0, :])):
+                all_features[new_i, 0, 0, j] = images[i, 0, 0, j]
             all_features[new_i, :, :, 0] = features
             new_i += 1
     all_features = all_features[:new_i]
@@ -165,10 +172,11 @@ def extract_jawline_features(feature_arr):
     """
     start_index = 0
     end_index = 16
-    jawline_arr = []
+    jawline_arr = np.zeros((len(feature_arr), end_index-start_index+1, 2, 4))
     for i in range(len(feature_arr)):
-        jawline_arr.append(feature_arr[i][start_index:end_index+1])
-    jawline_arr = np.array(jawline_arr)
+        jawline_arr[i, :, :, :] = feature_arr[i][start_index:end_index+1]
+        for j in range(len(feature_arr[i, 0, 0, :])):
+            jawline_arr[i, 0, 0, j] = feature_arr[i, 0, 0, j]
     return jawline_arr
 
 
@@ -180,14 +188,15 @@ def extract_smile_features(feature_arr):
     """
     start_index = 48
     end_index = 67
-    smile_arr = []
+    smile_arr = np.zeros((len(feature_arr), end_index-start_index+1, 2, 4))
     for i in range(len(feature_arr)):
-        smile_arr.append(feature_arr[i][start_index:end_index+1])
-    smile_arr = np.array(smile_arr)
+        smile_arr[i, :, :, :] = feature_arr[i][start_index:end_index+1]
+        for j in range(len(feature_arr[i, 0, 0, :])):
+            smile_arr[i, 0, 0, j] = feature_arr[i, 0, 0, j]
     return smile_arr
 
 
-def shuffle_split(images_dataset, labels_df, column_name, test_size):
+def shuffle_split(images_dataset, labels_df, column_name, test_size, logger):
     """
     This function splits the dataset into a training and a test set.
     :param images_dataset:      array containing the images
@@ -196,31 +205,45 @@ def shuffle_split(images_dataset, labels_df, column_name, test_size):
     :param test_size:           percentage of the dataset to be used as test set
     :return:                    training and test set
     """
-    # temporarily add another dimension to the images array
-    images_dataset = images_dataset[:, :, :, np.newaxis]
-    # store the labels in the last dimension of the images array
-    for i in range(len(images_dataset)):
-        images_dataset[i][0][0][0] = int(labels_df.loc[i, column_name])
+    # get the column number
+    if column_name == "img_number":
+        column_number = 1
+    elif column_name =="gender":
+        column_number = 2
+    elif column_name == "smiling":
+        column_number = 3
+    else:
+        logger.error("Invalid column name.")
+        exit()
     # calculate the number of elements in the test set
     test_element_number = int(len(images_dataset) * test_size)
     # shuffle before splitting
     np.random.shuffle(images_dataset)
-    img_train, img_test = images_dataset[test_element_number:, ...], images_dataset[:test_element_number, ...]
+    # split into training and test set
+    if test_element_number != 0:
+        img_train = images_dataset[:test_element_number, ...]
+        img_test = images_dataset[test_element_number:, ...]
+    else:
+        img_train = images_dataset
+        img_test = np.zeros((0, 68, 2, 4))     
     # shuffle once more for good measure
     np.random.shuffle(img_train)
     np.random.shuffle(img_test)
     # add labels into another array
-    label_train = []
-    label_test = []
+    label_train = np.zeros((len(img_train), 1))
+    label_test = np.zeros((len(img_test), 1))
+    # add the labels to the label arrays
     for i in range(len(img_train)):
-        label_train.append(img_train[i][0][0][0])
+        label_train[i] = img_train[i, 0, 0, column_number]
     for i in range(len(img_test)):
-        label_test.append(img_test[i][0][0][0])
-    label_train = np.array(label_train)
-    label_test = np.array(label_test)
-    # remove the labels from the images array
+        label_test[i] = img_test[i, 0, 0, column_number]
+    # remove the extra (label) dimension from the images array
     img_train = img_train[:, :, :, 0]
     img_test = img_test[:, :, :, 0]
+    # convert the labels to a 1D array
+    label_train = label_train.ravel()    
+    label_test = label_test.ravel()
+
     return img_train, img_test, label_train, label_test
 
 
