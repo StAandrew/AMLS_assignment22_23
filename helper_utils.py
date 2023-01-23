@@ -15,15 +15,15 @@ root_dir = os.path.dirname(os.path.abspath(__file__))
 datasets_dir = os.path.join(root_dir, "Datasets")
 
 # Specify basic directories
-celeba_train_label_dir = os.path.join(datasets_dir, "celeba", "labels.csv")
 celeba_train_img_dir = os.path.join(datasets_dir, "celeba", "img")
-celeba_test_label_dir = os.path.join(datasets_dir, "celeba_test", "labels.csv")
+celeba_train_label_dir = os.path.join(datasets_dir, "celeba", "labels.csv")
 celeba_test_img_dir = os.path.join(datasets_dir, "celeba_test", "img")
+celeba_test_label_dir = os.path.join(datasets_dir, "celeba_test", "labels.csv")
 
-cartoon_train_label_dir = os.path.join(datasets_dir, "cartoon_set_test", "labels.csv")
 cartoon_train_img_dir = os.path.join(datasets_dir, "cartoon_set", "img")
+cartoon_train_label_dir = os.path.join(datasets_dir, "cartoon_set", "labels.csv")
+cartoon_test_img_dir = os.path.join(datasets_dir, "cartoon_set_test", "img")
 cartoon_test_label_dir = os.path.join(datasets_dir, "cartoon_set_test", "labels.csv")
-cartoon_test_img_dir = os.path.join(datasets_dir, "cartoon_set", "img")
 
 # Specify extra directories
 celeba_features_train_dir = os.path.join(datasets_dir, "celeba", "features.npz")
@@ -43,11 +43,22 @@ a2_figure_confusion_matrix_path = os.path.join(root_dir, "A2", 'a2_confusion_mat
 a2_figure_c_performance_path = os.path.join(root_dir, "A2", 'a2_c_performance.png')
 a2_figure_gamma_performance_path = os.path.join(root_dir, "A2", 'a2_gamma_performance.png')
 
-cartoon_features_dir = os.path.join(datasets_dir, "cartoon_set_no_glasses")
-cartoon_features_train_label_dir = os.path.join(datasets_dir, "cartoon_set_no_glasses", "labels.csv")
-cartoon_features_train_img_dir = os.path.join(datasets_dir, "cartoon_set_no_glasses", "img")
-cartoon_features_test_label_dir = os.path.join(datasets_dir, "cartoon_set_test_no_glasses", "labels.csv")
-cartoon_features_test_img_dir = os.path.join(datasets_dir, "cartoon_set_test_no_glasses", "img")
+# cartoon_features_dir = os.path.join(datasets_dir, "cartoon_set_no_glasses")
+cartoon_train_features_dir = os.path.join(datasets_dir, "cartoon_set", "features.npz")
+cartoon_test_features_dir = os.path.join(datasets_dir, "cartoon_set_test", "features.npz")
+
+cartoon_resized_images_path = os.path.join(datasets_dir, "cartoon_set", "resized_img")
+cartoon_test_resized_images_path = os.path.join(datasets_dir, "cartoon_set_test", "resized_img")
+cartoon_resized_gray_images_path = os.path.join(datasets_dir, "cartoon_set", "resized_gray_img")
+cartoon_test_resized_gray_images_path = os.path.join(datasets_dir, "cartoon_set_test", "resized_gray_img")
+
+b1_model_path = os.path.join(root_dir, "B1", 'B1_weights.h5')
+b2_model_path = os.path.join(root_dir, "B2", 'B2_weights.h5')
+
+# cartoon_features_train_img_dir = os.path.join(datasets_dir, "cartoon_set_no_glasses", "img")
+# cartoon_features_train_label_dir = os.path.join(datasets_dir, "cartoon_set_no_glasses", "labels.csv")
+# cartoon_features_test_img_dir = os.path.join(datasets_dir, "cartoon_set_test_no_glasses", "img")
+# cartoon_features_test_label_dir = os.path.join(datasets_dir, "cartoon_set_test_no_glasses", "labels.csv")
 
 
 def initial_config(warnings_off=True, cpu_only_training=False):
@@ -87,10 +98,15 @@ def initial_config(warnings_off=True, cpu_only_training=False):
         # paths.append(cartoon_features_dir)
         # paths.append(cartoon_features_train_dir)
         # paths.append(cartoon_features_test_img_dir)
+        paths.append(cartoon_resized_images_path)
+        paths.append(cartoon_test_resized_images_path)
+        paths.append(cartoon_resized_gray_images_path)
+        paths.append(cartoon_test_resized_gray_images_path)
         
         for path in paths:
             if not os.path.exists(path):
                 os.makedirs(path)
+                logger.info("Created additional directory: " + path)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise Exception(f"Error creating directories: {e}")
@@ -148,3 +164,84 @@ def helper_plot_grid_gamma(figure_save_path, gamma, mean_scores):
     plt.tick_params(axis="both", which="major", labelsize=16)
     plt.title("SVM model, linear kernel. Impact of Gamma on performance", fontsize=20)
     plt.savefig(figure_save_path, dpi=300)
+
+
+# etc...
+def plot_performance(accuracy, val_accuracy, loss, val_loss, title=None):
+    """
+    Plots the history of the training phase and validation phase. It compares in two different subplots the accuracy
+    and the loss of the model.
+    :param accuracy: list of values for every epoch.
+    :param val_accuracy: list of values for every epoch.
+    :param loss: list of values for every epoch.
+    :param val_loss: list of values for every epoch.
+    :param title: tile of the figure printed. default_value=None
+    :return:
+    """
+    x_axis = [i for i in range(1, len(accuracy) + 1)]
+    sn.set()
+    fig = plt.figure()
+    if title is not None:
+        fig.suptitle(title)
+    # First subplot
+    plt.subplot(211)
+    plt.plot(x_axis, accuracy)
+    plt.plot(x_axis, val_accuracy)
+    plt.ylabel("Accuracy")
+    plt.legend(["Train", "Valid"], loc="lower right")
+    # Second subplot
+    plt.subplot(212)
+    plt.plot(x_axis, loss)
+    plt.plot(x_axis, val_loss)
+    plt.ylabel("Loss")
+    plt.ylim(top=0.7)
+    plt.xlabel("Epoch")
+    # Legend
+    plt.legend(["Train", "Valid"], loc="upper right")
+
+    graphs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "graphs")
+    if not os.path.exists(graphs_dir):
+        os.makedirs(graphs_dir)
+    plt.savefig(os.path.join(graphs_dir, "history.png"))
+
+
+def plot_confusion_matrix(class_labels, predicted_labels, true_labels, title=None):
+    """
+    Plots the confusion matrix given both the true and predicted results.
+    :param class_labels: list of the names of the labels.
+    :param predicted_labels: list of the predicted labels.
+    :param true_labels: list of the true labels.
+    :param title: tile of the figure printed
+    :return:
+    """
+    sn.set()
+    fig = plt.figure()
+    if title is not None:
+        fig.suptitle(title)
+    confusion_grid = pd.crosstab(true_labels, predicted_labels, normalize=True)
+    # Generate a custom diverging colormap
+    color_map = sn.diverging_palette(355, 250, as_cmap=True)
+    sn.heatmap(
+        confusion_grid,
+        cmap=color_map,
+        vmax=0.5,
+        vmin=0,
+        center=0,
+        xticklabels=class_labels,
+        yticklabels=class_labels,
+        square=True,
+        linewidths=2,
+        cbar_kws={"shrink": 0.5},
+        annot=True,
+    )
+    plt.xlabel("Predicted labels")
+    plt.ylabel("True labels")
+    graphs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "graphs")
+    if not os.path.exists(graphs_dir):
+        os.makedirs(graphs_dir)
+    plt.savefig(os.path.join(graphs_dir, "confusion_matrix.png"))
+    # Print a detailed report on the classification results
+    logger.info("\nClassification Report:\n")
+    logger.info(classification_report(true_labels, predicted_labels))
+
+

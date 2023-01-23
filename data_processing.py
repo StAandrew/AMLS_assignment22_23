@@ -89,7 +89,7 @@ def run_dlib_shape(image):
     return dlibout, resized_image
 
 
-def load_raw_datasets(dataset_img_path, dataset_labels_path, filename_column_name, grayscale=True):
+def load_datasets(dataset_img_path, dataset_labels_path, filename_column_name, feature_1_column_name, feature_2_column_name, grayscale=True):
     """
     This function loads the images and labels from the dataset.
     :param dataset_img_path:        path to the folder containing the images
@@ -99,24 +99,36 @@ def load_raw_datasets(dataset_img_path, dataset_labels_path, filename_column_nam
     :param grayscale:               if True, the images are converted to grayscale
     :return:                        labels and images
     """
-    labels_df = pd.read_csv(dataset_labels_path, skipinitialspace=True, sep="\t").drop(['Unnamed: 0'],axis=1)
-    images = np.zeros((len(labels_df), 218, 178, 4))
-    i = 0
-    for label_name in labels_df[filename_column_name]:
-        img = cv2.imread(os.path.join(dataset_img_path, label_name), IMREAD_COLOR)
-        image_number = int(labels_df.loc[i, filename_column_name][:-4])
-        gender_label = int(labels_df.loc[i, "gender"])
-        smiling_label = int(labels_df.loc[i, "smiling"])
+    try:
+        labels_df = pd.read_csv(dataset_labels_path, skipinitialspace=True, sep="\t").drop(['Unnamed: 0'],axis=1)
+        sample_image = cv2.imread(os.path.join(dataset_img_path, labels_df.loc[0, filename_column_name]), IMREAD_COLOR)
+        # sample_image = np.int8(sample_image)
         if grayscale:
-            img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            images[i, :, :, 0] = img_gray
+            images = np.zeros((len(labels_df), sample_image.shape[0], sample_image.shape[1], 4), dtype=np.uint16)
         else:
-            images[i, :, :, 0] = img
-        images[i][0][0][1] = image_number
-        images[i][0][0][2] = gender_label
-        images[i][0][0][3] = smiling_label
-        i += 1
-    return images, labels_df
+            images = np.zeros((len(labels_df), sample_image.shape[0], sample_image.shape[1], 3, 4), dtype=np.uint16)
+        i = 0
+        for label_name in labels_df[filename_column_name]:
+            img = cv2.imread(os.path.join(dataset_img_path, label_name), IMREAD_COLOR)
+            img = np.array(img, dtype=np.uint8)
+            image_number = int(labels_df.loc[i, filename_column_name][:-4])
+            feature_1_label = int(labels_df.loc[i, feature_1_column_name])
+            feature_2_label = int(labels_df.loc[i, feature_2_column_name])
+            if grayscale:
+                img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                images[i, :, :, 0] = img_gray
+                images[i][0][0][1] = image_number
+                images[i][0][0][2] = feature_1_label
+                images[i][0][0][3] = feature_2_label
+            else:
+                images[i, :, :, :, 0] = img
+                images[i][0][0][0][1] = image_number
+                images[i][0][0][0][2] = feature_1_label
+                images[i][0][0][0][3] = feature_2_label
+            i += 1
+        return images, labels_df
+    except:
+        return None, None
     
 
 def save_dataset(feature_arr, dataset_feature_arr_path):
@@ -127,7 +139,7 @@ def save_dataset(feature_arr, dataset_feature_arr_path):
     np.savez(dataset_feature_arr_path, feature_arr)
 
 
-def load_datasets(dataset_features_arr_path, dataset_labels_path):
+def load_features(dataset_features_arr_path, dataset_labels_path):
     """ This function loads the labels and features from disk.
     :param dataset_labels_path:     path to the CSV file containing the labels
     :param dataset_feature_arr_path: path to the array containing the features
@@ -143,7 +155,7 @@ def load_datasets(dataset_features_arr_path, dataset_labels_path):
     return feature_arr, labels_df
 
 
-def extract_face_features(images):
+def extract_face_features(images, grayscale=True):
     """
     This function extracts the face features from the images.
     :param images:      array containing the images and labels
@@ -151,16 +163,93 @@ def extract_face_features(images):
     """
     all_features = np.zeros((len(images), 68, 2, 4))
     new_i = 0
-    for i in range(len(images)):
-        image = images[i, :, :, 0]
-        features, _ = run_dlib_shape(image)
-        if features is not None:
-            for j in range(len(images[i, 0, 0, :])):
-                all_features[new_i, 0, 0, j] = images[i, 0, 0, j]
-            all_features[new_i, :, :, 0] = features
-            new_i += 1
-    all_features = all_features[:new_i]
+    if grayscale:
+        for i in range(len(images)):
+            image = images[i, :, :, 0]
+            features, _ = run_dlib_shape(image)
+            if features is not None:
+                for j in range(len(images[i, 0, 0, :])):
+                    all_features[new_i, 0, 0, j] = images[i, 0, 0, j]
+                all_features[new_i, :, :, 0] = features
+                new_i += 1
+        all_features = all_features[:new_i]
     return all_features
+
+
+def crop_resize_images_func(images, grayscale=True):
+    min_x = images.shape[0]
+    min_y = images.shape[1]
+    max_w = 0
+    max_h = 0
+        
+    # find the minimum and maximum width and height of the images
+    for i in range(len(images)):
+        if grayscale:
+            image = images[i, :, :, 0]
+            image = np.array(image, np.uint8)
+        else:
+            bgr_image = images[i, :, :, :, 0]
+            bgr_image = np.array(bgr_image, dtype=np.uint8)
+            image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2GRAY)
+        tmp_image = image.copy()
+        tmp_image[150:300, 160:340] = 0
+        tmp_image[300:370, 220:280] = 0
+        _, im = cv2.threshold(tmp_image, 225, 255, cv2.THRESH_BINARY_INV)
+        contours = cv2.findContours(im, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours = contours[0] if len(contours) == 2 else contours[1]
+        contours = sorted(contours, key=cv2.contourArea, reverse=True)
+        for c in contours:
+            x,y,w,h = cv2.boundingRect(c)
+            break
+        if x < min_x:
+            min_x = x
+        if y < min_y:
+            min_y = y
+        if h > max_h:
+            max_h = h
+        if w > max_w:
+            max_w = w
+    # print(min_x, min_y, max_w, max_h)
+
+    # cretate a new array for the resized images
+    if grayscale:
+        resized_images = np.zeros((len(images), max_h, max_w, 4), dtype=np.uint16)
+    else:
+        resized_images = np.zeros((len(images), max_h, max_w, 3, 4), dtype=np.uint16)
+
+    # resize images
+    for i in range(len(images)):
+        if grayscale:
+            image = images[i, :, :, 0]
+            image = np.array(image, np.uint8)
+            cropped_image = image[min_y:min_y+max_h, min_x:min_x+max_w]
+            resized_images[i, :, :, 0] = cropped_image
+            for j in range(len(images[i, 0, 0, :])):
+                resized_images[i, 0, 0, j] = images[i, 0, 0, j]
+        else:
+            image = images[i, :, :, :, 0]
+            image = np.array(image, np.uint8)
+            cropped_image = image[min_y:min_y+max_h, min_x:min_x+max_w]
+            resized_images[i, :, :, :, 0] = cropped_image
+            for j in range(len(images[i, 0, 0, 0, :])):
+                resized_images[i, 0, 0, 0, j] = images[i, 0, 0, 0, j]
+    image = cv2.resize(image, (128, 128))
+    return resized_images
+
+
+def save_resized_images(resized_images, resized_images_path, grayscale=True):
+    for i in range(len(resized_images)):
+        if grayscale:
+            img = resized_images[i, :, :, 0]
+            img_name = str(int(resized_images[i, 0, 0, 1]))
+            img_path = os.path.join(resized_images_path, f"{img_name}.png")
+        else:
+            img = resized_images[i, :, :, :, 0]
+            img_name = str(int(resized_images[i, 0, 0, 0, 1]))
+            img_path = os.path.join(resized_images_path, f"{img_name}.png")
+        if not cv2.imwrite(img_path, img):
+            raise Exception("Could not write image")
+            exit(1)
 
 
 def extract_jawline_features(feature_arr):
@@ -195,7 +284,7 @@ def extract_smile_features(feature_arr):
     return smile_arr
 
 
-def shuffle_split(images_dataset, labels_df, column_name, test_size, logger):
+def shuffle_split(images_dataset, labels_df, filename_column_name, feature_1_column_name, feature_2_column_name, needed_feature_column_name, test_size, logger):
     """
     This function splits the dataset into a training and a test set.
     :param images_dataset:      array containing the images
@@ -205,11 +294,11 @@ def shuffle_split(images_dataset, labels_df, column_name, test_size, logger):
     :return:                    training and test set
     """
     # get the column number
-    if column_name == "img_number":
+    if needed_feature_column_name == filename_column_name:
         column_number = 1
-    elif column_name =="gender":
+    elif needed_feature_column_name == feature_1_column_name:
         column_number = 2
-    elif column_name == "smiling":
+    elif needed_feature_column_name == feature_2_column_name:
         column_number = 3
     else:
         logger.error("Invalid column name.")
@@ -229,8 +318,8 @@ def shuffle_split(images_dataset, labels_df, column_name, test_size, logger):
     np.random.shuffle(img_train)
     np.random.shuffle(img_test)
     # add labels into another array
-    label_train = np.zeros((len(img_train), 1))
-    label_test = np.zeros((len(img_test), 1))
+    label_train = np.zeros((len(img_train), 1), dtype=int8)
+    label_test = np.zeros((len(img_test), 1), dtype=int8)
     # add the labels to the label arrays
     for i in range(len(img_train)):
         label_train[i] = img_train[i, 0, 0, column_number]
@@ -248,7 +337,7 @@ def shuffle_split(images_dataset, labels_df, column_name, test_size, logger):
 
 def data_reshape(data):
     """
-    This function reshapes the data to be used in the SVC.
+    This function reshapes the data to be used in the SVM.
     :param data:    array containing the data
     :return:        reshaped array
     """
