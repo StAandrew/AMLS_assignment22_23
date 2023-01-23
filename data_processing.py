@@ -178,10 +178,12 @@ def extract_face_features(images, grayscale=True):
 
 
 def crop_resize_images_func(images, grayscale=True):
-    min_x = images.shape[0]
-    min_y = images.shape[1]
+    min_x = images[0].shape[0]
+    min_y = images[0].shape[1]
     max_w = 0
     max_h = 0
+    print("initial values")
+    print(min_x, min_y, max_w, max_h)
         
     # find the minimum and maximum width and height of the images
     for i in range(len(images)):
@@ -210,7 +212,8 @@ def crop_resize_images_func(images, grayscale=True):
             max_h = h
         if w > max_w:
             max_w = w
-    # print(min_x, min_y, max_w, max_h)
+    print("calculated values")
+    print(min_x, min_y, max_w, max_h)
 
     # cretate a new array for the resized images
     if grayscale:
