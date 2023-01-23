@@ -110,7 +110,7 @@ def load_datasets(dataset_img_path, dataset_labels_path, filename_column_name, f
         i = 0
         for label_name in labels_df[filename_column_name]:
             img = cv2.imread(os.path.join(dataset_img_path, label_name), IMREAD_COLOR)
-            img = np.array(img, dtype=np.uint8)
+            img = img.astype(np.uint8)
             image_number = int(labels_df.loc[i, filename_column_name][:-4])
             feature_1_label = int(labels_df.loc[i, feature_1_column_name])
             feature_2_label = int(labels_df.loc[i, feature_2_column_name])
@@ -166,6 +166,7 @@ def extract_face_features(images, grayscale=True):
     if grayscale:
         for i in range(len(images)):
             image = images[i, :, :, 0]
+            image = img.astype(np.uint8)
             features, _ = run_dlib_shape(image)
             if features is not None:
                 for j in range(len(images[i, 0, 0, :])):
@@ -186,10 +187,10 @@ def crop_resize_images_func(images, grayscale=True):
     for i in range(len(images)):
         if grayscale:
             image = images[i, :, :, 0]
-            image = np.array(image, np.uint8)
+            image = image.astype(np.uint8)
         else:
             bgr_image = images[i, :, :, :, 0]
-            bgr_image = np.array(bgr_image, dtype=np.uint8)
+            bgr_image = bgr_image.astype(np.uint8)
             image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2GRAY)
         tmp_image = image.copy()
         tmp_image[150:300, 160:340] = 0
@@ -221,19 +222,19 @@ def crop_resize_images_func(images, grayscale=True):
     for i in range(len(images)):
         if grayscale:
             image = images[i, :, :, 0]
-            image = np.array(image, np.uint8)
+            image = image.astype(np.uint8)
             cropped_image = image[min_y:min_y+max_h, min_x:min_x+max_w]
             resized_images[i, :, :, 0] = cropped_image
             for j in range(len(images[i, 0, 0, :])):
                 resized_images[i, 0, 0, j] = images[i, 0, 0, j]
         else:
             image = images[i, :, :, :, 0]
-            image = np.array(image, np.uint8)
+            image = image.astype(np.uint8)
             cropped_image = image[min_y:min_y+max_h, min_x:min_x+max_w]
             resized_images[i, :, :, :, 0] = cropped_image
             for j in range(len(images[i, 0, 0, 0, :])):
                 resized_images[i, 0, 0, 0, j] = images[i, 0, 0, 0, j]
-    image = cv2.resize(image, (128, 128))
+    # image = cv2.resize(image, (128, 128))
     return resized_images
 
 
@@ -241,6 +242,7 @@ def save_resized_images(resized_images, resized_images_path, grayscale=True):
     for i in range(len(resized_images)):
         if grayscale:
             img = resized_images[i, :, :, 0]
+            img = img.astype(np.uint8)
             img_name = str(int(resized_images[i, 0, 0, 1]))
             img_path = os.path.join(resized_images_path, f"{img_name}.png")
         else:
@@ -331,6 +333,9 @@ def shuffle_split(images_dataset, labels_df, filename_column_name, feature_1_col
     # convert the labels to a 1D array
     label_train = label_train.ravel()    
     label_test = label_test.ravel()
+    # cast images into uint8
+    img_train = img_train.astype(np.uint8)
+    img_test = img_test.astype(np.uint8)
 
     return img_train, img_test, label_train, label_test
 

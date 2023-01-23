@@ -14,16 +14,11 @@ import sys
 root_dir = os.path.dirname(os.path.abspath(__file__))
 datasets_dir = os.path.join(root_dir, "Datasets")
 
-# Specify basic directories
+# Specify celeba directories
 celeba_train_img_dir = os.path.join(datasets_dir, "celeba", "img")
 celeba_train_label_dir = os.path.join(datasets_dir, "celeba", "labels.csv")
 celeba_test_img_dir = os.path.join(datasets_dir, "celeba_test", "img")
 celeba_test_label_dir = os.path.join(datasets_dir, "celeba_test", "labels.csv")
-
-cartoon_train_img_dir = os.path.join(datasets_dir, "cartoon_set", "img")
-cartoon_train_label_dir = os.path.join(datasets_dir, "cartoon_set", "labels.csv")
-cartoon_test_img_dir = os.path.join(datasets_dir, "cartoon_set_test", "img")
-cartoon_test_label_dir = os.path.join(datasets_dir, "cartoon_set_test", "labels.csv")
 
 # Specify extra directories
 celeba_features_train_dir = os.path.join(datasets_dir, "celeba", "features.npz")
@@ -42,6 +37,12 @@ a2_figure_learning_file_path = os.path.join(root_dir, "A2", 'a2_learning_curve_d
 a2_figure_confusion_matrix_path = os.path.join(root_dir, "A2", 'a2_confusion_matrix.png')
 a2_figure_c_performance_path = os.path.join(root_dir, "A2", 'a2_c_performance.png')
 a2_figure_gamma_performance_path = os.path.join(root_dir, "A2", 'a2_gamma_performance.png')
+
+# Specify cartoon directories
+cartoon_train_img_dir = os.path.join(datasets_dir, "cartoon_set", "img")
+cartoon_train_label_dir = os.path.join(datasets_dir, "cartoon_set", "labels_20.csv")
+cartoon_test_img_dir = os.path.join(datasets_dir, "cartoon_set_test", "img")
+cartoon_test_label_dir = os.path.join(datasets_dir, "cartoon_set_test", "labels_20.csv")
 
 # cartoon_features_dir = os.path.join(datasets_dir, "cartoon_set_no_glasses")
 cartoon_train_features_dir = os.path.join(datasets_dir, "cartoon_set", "features.npz")
