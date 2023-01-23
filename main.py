@@ -1,6 +1,7 @@
 from helper_utils import *
 from data_processing import *
 from sklearn import svm
+from keras.callbacks import EarlyStopping
 
 from A1.a1 import A1
 # from A2.a2 import A2
@@ -91,7 +92,7 @@ if run_a2:
 
 
 if run_b1:
-    img_size = (150, 150)
+    img_size = (250, 250)
     logger.info("Loading resized gray Cartoon dataset images...")
     cartoon_gray_images, cartoon_labels_df = load_datasets(cartoon_resized_gray_images_path, cartoon_train_label_dir, "file_name", "eye_color", "face_shape")
     if cartoon_gray_images is None:
@@ -128,9 +129,20 @@ if run_b1:
     img_cols=cartoon_data_train[0].shape[1]
     input_shape = (img_rows, img_cols, 1)
 
+    logger.debug(cartoon_data_train.shape)
+    logger.debug(cartoon_data_verify.shape)
+    logger.debug(cartoon_data_test.shape)
+
     cartoon_data_train = cartoon_data_train.reshape(cartoon_data_train.shape[0], img_rows, img_cols, 1)
     cartoon_data_verify = cartoon_data_verify.reshape(cartoon_data_verify.shape[0], img_rows, img_cols, 1)
     cartoon_data_test = cartoon_data_test.reshape(cartoon_data_test.shape[0], img_rows, img_cols, 1)
+
+    logger.debug(cartoon_data_train.shape)
+    logger.debug(cartoon_data_verify.shape)
+    logger.debug(cartoon_data_test.shape)
+    exit()
+
+
 
     dataset_train = tf.data.Dataset.from_tensor_slices((cartoon_data_train, cartoon_label_train))
     dataset_valuation = tf.data.Dataset.from_tensor_slices((cartoon_data_verify, cartoon_label_verify))
@@ -140,13 +152,13 @@ if run_b1:
     validation_batches = dataset_valuation.shuffle(buffer_size=1000).batch(batch_size).prefetch(1)
     test_batches = dataset_test.shuffle(buffer_size=1000).batch(batch_size).prefetch(1)
 
-    # early_stop_callback = EarlyStopping(
-    #     monitor="val_loss", restore_best_weights=True, patience=5, verbose=1
-    # )
+    early_stop_callback = EarlyStopping(
+        monitor="val_loss", restore_best_weights=True, patience=5, verbose=1
+    )
 
     model = B1(input_shape)
     acc_B1_train, acc_B1_valid = model.train(
-        training_batches, validation_batches, epochs=epochs, verbose=2, plot=True
+        training_batches, validation_batches, epochs=epochs, verbose=2, plot=True, callbacks=[early_stop_callback]
     )
     # model.model.save_weights(b1_model_path)
     acc_B1_test = model.test(logger, test_batches, verbose=2, confusion_mesh=True)

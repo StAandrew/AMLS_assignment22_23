@@ -9,6 +9,7 @@ from tensorflow.keras.layers import Dense, Conv2D, Dropout, Flatten, MaxPooling2
 from tensorflow.keras import optimizers
 from tensorflow.data import AUTOTUNE
 from tensorflow.keras.callbacks import EarlyStopping
+from sklearn.metrics import accuracy_score
 
 
 # MNIST dataset parameters.
@@ -67,8 +68,9 @@ class B1:
         )
 
     def train(
-        self, training_batches, validation_batches, epochs=15, verbose=1, plot=True
+        self, training_batches, validation_batches, epochs=15, verbose=1, plot=True, callbacks=None
     ):
+        self.model.callbacks = callbacks
         history = self.model.fit(
             training_batches,
             steps_per_epoch=len(training_batches),
@@ -89,7 +91,7 @@ class B1:
     def evaluate(self, test_batches, verbose=1):
         return self.model.evaluate(x=test_batches, verbose=verbose)
 
-    def test(self, test_batches, verbose=1, confusion_mesh=True, class_labels="auto"):
+    def test(self, logger, test_batches, verbose=1, confusion_mesh=True, class_labels="auto"):
         predictions = self.model.predict(
             x=test_batches, steps=len(test_batches), verbose=verbose
         )
@@ -98,5 +100,5 @@ class B1:
         predicted_labels = np.array(predicted_labels)
         true_labels = np.array(np.concatenate([y for x, y in test_batches], axis=0))
         if confusion_mesh:
-            plot_confusion_matrix(class_labels, predicted_labels, true_labels)
+            plot_confusion_matrix(logger, class_labels, predicted_labels, true_labels)
         return accuracy_score(true_labels, predicted_labels)
