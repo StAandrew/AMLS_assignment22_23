@@ -35,7 +35,7 @@ if run_b1 or run_b2:
     # Prepare training and verification data for B1 & B2
     logger.info("Loading resized Cartoon dataset images...")
     cartoon_images, cartoon_labels_df = load_datasets(cartoon_resized_images_path, cartoon_train_label_dir, "file_name", "eye_color", "face_shape", grayscale=False)
-    if cartoon_images == None:
+    if cartoon_images is None:
         logger.info("Cartoon resized images not found. Loading raw data...")
         images, cartoon_labels_df = load_datasets(cartoon_train_img_dir, cartoon_train_label_dir, "file_name", "eye_color", "face_shape", grayscale=False)
         logger.info("Resizing RGB images...")
@@ -47,7 +47,7 @@ if run_b1 or run_b2:
 
     logger.info("Loading resized gray Cartoon dataset images...")
     cartoon_gray_images, _ = load_datasets(cartoon_resized_gray_images_path, cartoon_train_label_dir, "file_name", "eye_color", "face_shape")
-    if cartoon_gray_images == None:
+    if cartoon_gray_images is None:
         logger.info("Cartoon resized gray images not found. Loading raw images...")
         gray_images, _ = load_datasets(cartoon_train_img_dir, cartoon_train_label_dir, "file_name", "eye_color", "face_shape")
         logger.info("Resizing gray images...")
@@ -57,7 +57,7 @@ if run_b1 or run_b2:
 
     logger.info("Loading Cartoon dataset features...")
     cartoon_features, _ = load_features(cartoon_train_features_dir, cartoon_train_label_dir)
-    if cartoon_features == None:
+    if cartoon_features is None:
         logger.info("Cartoon features not found. Extracting features...")
         cartoon_features = extract_face_features(cartoon_gray_images)
         logger.info("Saving features...")
