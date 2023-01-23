@@ -114,6 +114,11 @@ def load_datasets(dataset_img_path, dataset_labels_path, filename_column_name, f
             image_number = int(labels_df.loc[i, filename_column_name][:-4])
             feature_1_label = int(labels_df.loc[i, feature_1_column_name])
             feature_2_label = int(labels_df.loc[i, feature_2_column_name])
+            # LABEL MAP: -1 -> 0 in order to support uint8 format everywhere
+            if feature_1_label == -1:
+                feature_1_label = 0
+            if feature_2_label == -1:
+                feature_2_label = 0
             if grayscale:
                 img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 images[i, :, :, 0] = img_gray
@@ -177,9 +182,9 @@ def extract_face_features(images, grayscale=True):
     return all_features
 
 
-def crop_resize_images_func(images, grayscale=True):
-    new_w = 128
-    new_h = 128
+def crop_resize_images_func(new_size, images, grayscale=True):
+    new_w = new_size[0]
+    new_h = new_size[1]
 
     min_x = images[0].shape[0]
     min_y = images[0].shape[1]
@@ -227,7 +232,7 @@ def crop_resize_images_func(images, grayscale=True):
             image = images[i, :, :, 0]
             image = image.astype(np.uint8)
             cropped_image = image[min_y:min_y+max_h, min_x:min_x+max_w]
-            resized_image = cv2.resize(cropped_image, (128, 128))
+            resized_image = cv2.resize(cropped_image, new_size)
             resized_images[i, :, :, 0] = resized_image
             for j in range(len(images[i, 0, 0, :])):
                 resized_images[i, 0, 0, j] = images[i, 0, 0, j]
@@ -235,7 +240,7 @@ def crop_resize_images_func(images, grayscale=True):
             image = images[i, :, :, :, 0]
             image = image.astype(np.uint8)
             cropped_image = image[min_y:min_y+max_h, min_x:min_x+max_w]
-            resized_image = cv2.resize(cropped_image, (128, 128))
+            resized_image = cv2.resize(cropped_image, new_size)
             resized_images[i, :, :, :, 0] = resized_image
             for j in range(len(images[i, 0, 0, 0, :])):
                 resized_images[i, 0, 0, 0, j] = images[i, 0, 0, 0, j]
@@ -292,7 +297,7 @@ def extract_smile_features(feature_arr):
     return smile_arr
 
 
-def shuffle_split(images_dataset, labels_df, filename_column_name, feature_1_column_name, feature_2_column_name, needed_feature_column_name, test_size, logger):
+def shuffle_split(images_dataset, labels_df, filename_column_name, feature_1_column_name, feature_2_column_name, needed_feature_column_name, test_size, logger, grayscale=True):
     """
     This function splits the dataset into a training and a test set.
     :param images_dataset:      array containing the images
@@ -321,21 +326,35 @@ def shuffle_split(images_dataset, labels_df, filename_column_name, feature_1_col
         img_test = images_dataset[test_element_number:, ...]
     else:
         img_train = images_dataset
-        img_test = np.zeros((0, 68, 2, 4))     
+        w = images_dataset[0].shape[0]
+        h = images_dataset[0].shape[1]
+        if grayscale:
+            img_test = np.zeros((0, w, h, 1), dtype=np.uint8)
+        else:
+            img_test = np.zeros((0, w, h, 3, 1), dtype=np.uint8)
     # shuffle once more for good measure
     np.random.shuffle(img_train)
     np.random.shuffle(img_test)
     # add labels into another array
-    label_train = np.zeros((len(img_train), 1), dtype=int8)
-    label_test = np.zeros((len(img_test), 1), dtype=int8)
+    label_train = np.zeros((len(img_train), 1), dtype=np.uint8)
+    label_test = np.zeros((len(img_test), 1), dtype=np.uint8)
     # add the labels to the label arrays
-    for i in range(len(img_train)):
-        label_train[i] = img_train[i, 0, 0, column_number]
-    for i in range(len(img_test)):
-        label_test[i] = img_test[i, 0, 0, column_number]
-    # remove the extra (label) dimension from the images array
-    img_train = img_train[:, :, :, 0]
-    img_test = img_test[:, :, :, 0]
+    if grayscale:
+        for i in range(len(img_train)):
+            label_train[i] = img_train[i, 0, 0, column_number]
+        for i in range(len(img_test)):
+            label_test[i] = img_test[i, 0, 0, column_number]
+        # remove the extra (label) dimension from the images array
+        img_train = img_train[:, :, :, 0]
+        img_test = img_test[:, :, :, 0]
+    else:
+        for i in range(len(img_train)):
+            label_train[i] = img_train[i, 0, 0, 0, column_number]
+        for i in range(len(img_test)):
+            label_test[i] = img_test[i, 0, 0, 0, column_number]
+        # remove the extra (label) dimension from the images array
+        img_train = img_train[:, :, :, :, 0]
+        img_test = img_test[:, :, :, :, 0]
     # convert the labels to a 1D array
     label_train = label_train.ravel()    
     label_test = label_test.ravel()

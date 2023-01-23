@@ -40,9 +40,9 @@ a2_figure_gamma_performance_path = os.path.join(root_dir, "A2", 'a2_gamma_perfor
 
 # Specify cartoon directories
 cartoon_train_img_dir = os.path.join(datasets_dir, "cartoon_set", "img")
-cartoon_train_label_dir = os.path.join(datasets_dir, "cartoon_set", "labels.csv")
+cartoon_train_label_dir = os.path.join(datasets_dir, "cartoon_set", "labels_20.csv")
 cartoon_test_img_dir = os.path.join(datasets_dir, "cartoon_set_test", "img")
-cartoon_test_label_dir = os.path.join(datasets_dir, "cartoon_set_test", "labels.csv")
+cartoon_test_label_dir = os.path.join(datasets_dir, "cartoon_set_test", "labels_20.csv")
 
 # cartoon_features_dir = os.path.join(datasets_dir, "cartoon_set_no_glasses")
 cartoon_train_features_dir = os.path.join(datasets_dir, "cartoon_set", "features.npz")
@@ -70,7 +70,7 @@ def initial_config(warnings_off=True, cpu_only_training=False):
         :return: None
     """
     # Disable tensorflow warnings
-    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+    # os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
     # Setup logging
     logging.basicConfig(
@@ -206,7 +206,7 @@ def plot_performance(accuracy, val_accuracy, loss, val_loss, title=None):
     plt.savefig(os.path.join(graphs_dir, "history.png"))
 
 
-def plot_confusion_matrix(class_labels, predicted_labels, true_labels, title=None):
+def plot_confusion_matrix(logger, class_labels, predicted_labels, true_labels, title=None):
     """
     Plots the confusion matrix given both the true and predicted results.
     :param class_labels: list of the names of the labels.
