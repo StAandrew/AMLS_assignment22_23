@@ -178,12 +178,13 @@ def extract_face_features(images, grayscale=True):
 
 
 def crop_resize_images_func(images, grayscale=True):
+    new_w = 128
+    new_h = 128
+
     min_x = images[0].shape[0]
     min_y = images[0].shape[1]
     max_w = 0
     max_h = 0
-    print("initial values")
-    print(min_x, min_y, max_w, max_h)
         
     # find the minimum and maximum width and height of the images
     for i in range(len(images)):
@@ -212,14 +213,13 @@ def crop_resize_images_func(images, grayscale=True):
             max_h = h
         if w > max_w:
             max_w = w
-    print("calculated values")
-    print(min_x, min_y, max_w, max_h)
+    # print(min_x, min_y, max_w, max_h)
 
     # cretate a new array for the resized images
     if grayscale:
-        resized_images = np.zeros((len(images), max_h, max_w, 4), dtype=np.uint16)
+        resized_images = np.zeros((len(images), new_h, new_w, 4), dtype=np.uint16)
     else:
-        resized_images = np.zeros((len(images), max_h, max_w, 3, 4), dtype=np.uint16)
+        resized_images = np.zeros((len(images), new_h, new_w, 3, 4), dtype=np.uint16)
 
     # resize images
     for i in range(len(images)):
@@ -227,14 +227,16 @@ def crop_resize_images_func(images, grayscale=True):
             image = images[i, :, :, 0]
             image = image.astype(np.uint8)
             cropped_image = image[min_y:min_y+max_h, min_x:min_x+max_w]
-            resized_images[i, :, :, 0] = cropped_image
+            resized_image = cv2.resize(cropped_image, (128, 128))
+            resized_images[i, :, :, 0] = resized_image
             for j in range(len(images[i, 0, 0, :])):
                 resized_images[i, 0, 0, j] = images[i, 0, 0, j]
         else:
             image = images[i, :, :, :, 0]
             image = image.astype(np.uint8)
             cropped_image = image[min_y:min_y+max_h, min_x:min_x+max_w]
-            resized_images[i, :, :, :, 0] = cropped_image
+            resized_image = cv2.resize(cropped_image, (128, 128))
+            resized_images[i, :, :, :, 0] = resized_image
             for j in range(len(images[i, 0, 0, 0, :])):
                 resized_images[i, 0, 0, 0, j] = images[i, 0, 0, 0, j]
     # image = cv2.resize(image, (128, 128))
@@ -250,6 +252,7 @@ def save_resized_images(resized_images, resized_images_path, grayscale=True):
             img_path = os.path.join(resized_images_path, f"{img_name}.png")
         else:
             img = resized_images[i, :, :, :, 0]
+            img = img.astype(np.uint8)
             img_name = str(int(resized_images[i, 0, 0, 0, 1]))
             img_path = os.path.join(resized_images_path, f"{img_name}.png")
         if not cv2.imwrite(img_path, img):
