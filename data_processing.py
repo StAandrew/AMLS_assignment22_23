@@ -249,6 +249,27 @@ def crop_resize_images_func(new_size, images, grayscale=True):
     return resized_images
 
 
+def extract_eye_rectangle(images, eye_rect, black_rect, grayscale=True):
+    eye_rect = (248, 275, 190, 310)
+    black_rect = (245, 280, 225, 275)
+
+    # for i in range(len(images)):
+    for i in range(10):
+        if grayscale:
+            image = images[i, :, :, 0]
+            image = image.astype(np.uint8)
+        else:
+            bgr_image = images[i, :, :, :, 0]
+            bgr_image = bgr_image.astype(np.uint8)
+            image  = bgr_image
+        tmp_image = image.copy()
+        tmp_image[black_rect[0]:black_rect[1], black_rect[2]:black_rect[3]] = 0
+        tmp_image = tmp_image[eye_rect[0]:eye_rect[1], eye_rect[2]:eye_rect[3]]
+        resized_image = cv2.resize(cropped_image, new_size)
+        cv2.imwrite(f"{os.path.join(cartoon_resized_images_path, str(i))}.png", tmp_image)
+    exit()
+
+
 def save_resized_images(resized_images, resized_images_path, grayscale=True):
     for i in range(len(resized_images)):
         if grayscale:
