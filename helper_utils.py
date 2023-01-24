@@ -21,8 +21,8 @@ celeba_test_img_dir = os.path.join(datasets_dir, "celeba_test", "img")
 celeba_test_label_path = os.path.join(datasets_dir, "celeba_test", "labels.csv")
 
 # Specify extra directories
-celeba_features_train_dir = os.path.join(datasets_dir, "celeba", "features.npz")
-celeba_features_test_dir = os.path.join(datasets_dir, "celeba_test", "features.npz")
+celeba_features_train_path = os.path.join(datasets_dir, "celeba", "features.npz")
+celeba_features_test_path = os.path.join(datasets_dir, "celeba_test", "features.npz")
 
 a1_model_path = os.path.join(root_dir, "A1", 'a1_model.pkl')
 a1_figure_learning_path = os.path.join(root_dir, "A1", 'a1_learning_curve.png')

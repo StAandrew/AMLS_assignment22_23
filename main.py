@@ -11,26 +11,26 @@ from B2.b2 import B2
 logger = initial_config()
 run_a1 = False
 run_a2 = False
-run_b1 = False
-run_b2 = True
+run_b1 = True
+run_b2 = False
 
 if run_a1 or run_a2:
     logger.info("Loading CelebA dataset features...")
     # Prepare training and verification data for A1 & A2
-    celeba_features, label_df = load_features(celeba_features_train_dir, celeba_train_label_path)
+    celeba_features, label_df = load_features(celeba_features_train_path, celeba_train_label_path)
     if celeba_features is None or label_df is None:
         logger.info("Celeba features not found, loading raw data and extracting features...")
         images, label_df = load_datasets(celeba_train_img_dir, celeba_train_label_path, "img_name", "gender", "smiling")
         celeba_features = extract_face_features(images)
-        save_dataset(celeba_features, celeba_features_train_dir)
+        save_dataset(celeba_features, celeba_features_train_path)
 
     logger.info("Loading CelebA test dataset features...")
-    celeba_features_test, label_df_test = load_features(celeba_features_test_dir, celeba_test_label_path)
+    celeba_features_test, label_df_test = load_features(celeba_features_test_path, celeba_test_label_path)
     if celeba_features_test is None or label_df_test is None:
         logger.info("Celeba test features not found, loading raw data and extracting features...")
         images, label_df_test = load_datasets(celeba_test_img_dir, celeba_test_label_path, "img_name", "gender", "smiling")
         celeba_features_test = extract_face_features(images)
-        save_dataset(celeba_features_test, celeba_features_test_dir)
+        save_dataset(celeba_features_test, celeba_features_test_path)
 
 
 if run_a1:
