@@ -99,26 +99,3 @@ class B2:
         if confusion_mesh:
             plot_confusion_matrix(logger, class_labels, predicted_labels, true_labels)
         return accuracy_score(true_labels, predicted_labels)
-
-
-    # conv_net = ConvNet()
-    # print("model built")
-
-    # Stochastic gradient descent optimizer.
-    # optimizer = tf.optimizers.Adam(learning_rate)
-
-    # # Run training for the given number of steps.
-    # for step, (batch_x, batch_y) in enumerate(train_data.take(training_steps), 1):
-    #     # Run the optimization to update W and b values.
-    #     run_optimization(batch_x, batch_y, conv_net, optimizer)
-    #     print(step)
-    #     if step % display_step == 0:
-    #         pred = conv_net(batch_x)
-    #         loss = cross_entropy_loss(pred, batch_y)
-    #         acc = accuracy(pred, batch_y)
-    #         print("step: %i, loss: %f, accuracy: %f" % (step, loss, acc))
-
-    # # Test model on validation set.
-    # pred = conv_net(x_test)
-    # print("Test Accuracy: %f" % accuracy(pred, y_test))
-
