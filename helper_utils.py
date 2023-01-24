@@ -1,3 +1,8 @@
+""" Helper functions.
+
+This file contains all paths and helper functions used in the project.
+"""
+
 import matplotlib.pyplot as plt
 import seaborn as sn
 import pandas as pd
@@ -24,19 +29,31 @@ celeba_test_label_path = os.path.join(datasets_dir, "celeba_test", "labels.csv")
 celeba_features_train_path = os.path.join(datasets_dir, "celeba", "features.npz")
 celeba_features_test_path = os.path.join(datasets_dir, "celeba_test", "features.npz")
 
-a1_model_path = os.path.join(root_dir, "A1", 'a1_model.pkl')
-a1_figure_learning_path = os.path.join(root_dir, "A1", 'a1_learning_curve.png')
-a1_figure_learning_file_path = os.path.join(root_dir, "A1", 'a1_learning_curve_data.npz')
-a1_figure_confusion_matrix_path = os.path.join(root_dir, "A1", 'a1_confusion_matrix.png')
-a1_figure_c_performance_path = os.path.join(root_dir, "A1", 'a1_c_performance.png')
-a1_figure_gamma_performance_path = os.path.join(root_dir, "A1", 'a1_gamma_performance.png')
+a1_model_path = os.path.join(root_dir, "A1", "a1_model.pkl")
+a1_figure_learning_path = os.path.join(root_dir, "A1", "a1_learning_curve.png")
+a1_figure_learning_file_path = os.path.join(
+    root_dir, "A1", "a1_learning_curve_data.npz"
+)
+a1_figure_confusion_matrix_path = os.path.join(
+    root_dir, "A1", "a1_confusion_matrix.png"
+)
+a1_figure_c_performance_path = os.path.join(root_dir, "A1", "a1_c_performance.png")
+a1_figure_gamma_performance_path = os.path.join(
+    root_dir, "A1", "a1_gamma_performance.png"
+)
 
-a2_model_path = os.path.join(root_dir, "A2", 'a2_model.pkl')
-a2_figure_learning_path = os.path.join(root_dir, "A2", 'a2_learning_curve.png')
-a2_figure_learning_file_path = os.path.join(root_dir, "A2", 'a2_learning_curve_data.npz')
-a2_figure_confusion_matrix_path = os.path.join(root_dir, "A2", 'a2_confusion_matrix.png')
-a2_figure_c_performance_path = os.path.join(root_dir, "A2", 'a2_c_performance.png')
-a2_figure_gamma_performance_path = os.path.join(root_dir, "A2", 'a2_gamma_performance.png')
+a2_model_path = os.path.join(root_dir, "A2", "a2_model.pkl")
+a2_figure_learning_path = os.path.join(root_dir, "A2", "a2_learning_curve.png")
+a2_figure_learning_file_path = os.path.join(
+    root_dir, "A2", "a2_learning_curve_data.npz"
+)
+a2_figure_confusion_matrix_path = os.path.join(
+    root_dir, "A2", "a2_confusion_matrix.png"
+)
+a2_figure_c_performance_path = os.path.join(root_dir, "A2", "a2_c_performance.png")
+a2_figure_gamma_performance_path = os.path.join(
+    root_dir, "A2", "a2_gamma_performance.png"
+)
 
 # Specify default cartoon directories
 cartoon_img_dir = os.path.join(datasets_dir, "cartoon_set", "img")
@@ -45,46 +62,49 @@ cartoon_test_img_dir = os.path.join(datasets_dir, "cartoon_set_test", "img")
 cartoon_test_label_path = os.path.join(datasets_dir, "cartoon_set_test", "labels.csv")
 
 cartoon_features_dir = os.path.join(datasets_dir, "cartoon_set", "features.npz")
-cartoon_resized_images_path = os.path.join(datasets_dir, "cartoon_set", "resized_img")
-cartoon_resized_gray_images_path = os.path.join(datasets_dir, "cartoon_set", "resized_gray_img")
 cartoon_eyes_dir = os.path.join(datasets_dir, "cartoon_set", "eyes")
 cartoon_eyes_label_path = os.path.join(datasets_dir, "cartoon_set", "eyes_labels.csv")
 cartoon_jaws_dir = os.path.join(datasets_dir, "cartoon_set", "jaws")
 cartoon_jaws_label_path = os.path.join(datasets_dir, "cartoon_set", "jaws_labels.csv")
 
-cartoon_test_features_dir = os.path.join(datasets_dir, "cartoon_set_test", "features.npz")
-cartoon_test_resized_images_path = os.path.join(datasets_dir, "cartoon_set_test", "resized_img")
-cartoon_test_resized_gray_images_path = os.path.join(datasets_dir, "cartoon_set_test", "resized_gray_img")
+cartoon_test_features_dir = os.path.join(
+    datasets_dir, "cartoon_set_test", "features.npz"
+)
 cartoon_test_eyes_dir = os.path.join(datasets_dir, "cartoon_set_test", "eyes")
-cartoon_test_eyes_label_path = os.path.join(datasets_dir, "cartoon_set_test", "eyes_labels.csv")
+cartoon_test_eyes_label_path = os.path.join(
+    datasets_dir, "cartoon_set_test", "eyes_labels.csv"
+)
 cartoon_test_jaws_dir = os.path.join(datasets_dir, "cartoon_set_test", "jaws")
-cartoon_test_jaws_label_path = os.path.join(datasets_dir, "cartoon_set_test", "jaws_labels.csv")
+cartoon_test_jaws_label_path = os.path.join(
+    datasets_dir, "cartoon_set_test", "jaws_labels.csv"
+)
 
-b1_model_path = os.path.join(root_dir, "B1", 'B1_weights.h5')
-b2_model_path = os.path.join(root_dir, "B2", 'B2_weights.h5')
+b1_model_path = os.path.join(root_dir, "B1", "B1_weights.h5")
+b2_model_path = os.path.join(root_dir, "B2", "B2_weights.h5")
 
-b1_model_path = os.path.join(root_dir, "B1", 'b1_model.pkl')
-b1_figure_learning_path = os.path.join(root_dir, "B1", 'b1_learning_curve.png')
-b1_figure_learning_file_path = os.path.join(root_dir, "B1", 'b1_learning_curve_data.npz')
-b1_figure_confusion_matrix_path = os.path.join(root_dir, "B1", 'b1_confusion_matrix.png')
-b1_figure_c_performance_path = os.path.join(root_dir, "B1", 'b1_c_performance.png')
-b1_figure_gamma_performance_path = os.path.join(root_dir, "B1", 'b1_gamma_performance.png')
-
-# cartoon_features_train_img_dir = os.path.join(datasets_dir, "cartoon_set_no_glasses", "img")
-# cartoon_features_train_label_dir = os.path.join(datasets_dir, "cartoon_set_no_glasses", "labels.csv")
-# cartoon_features_test_img_dir = os.path.join(datasets_dir, "cartoon_set_test_no_glasses", "img")
-# cartoon_features_test_label_dir = os.path.join(datasets_dir, "cartoon_set_test_no_glasses", "labels.csv")
-
+# b1_model_path = os.path.join(root_dir, "B1", "b1_model.pkl")
+# b1_figure_learning_path = os.path.join(root_dir, "B1", "b1_learning_curve.png")
+# b1_figure_learning_file_path = os.path.join(
+#     root_dir, "B1", "b1_learning_curve_data.npz"
+# )
+# b1_figure_confusion_matrix_path = os.path.join(
+#     root_dir, "B1", "b1_confusion_matrix.png"
+# )
+# b1_figure_c_performance_path = os.path.join(root_dir, "B1", "b1_c_performance.png")
+# b1_figure_gamma_performance_path = os.path.join(
+#     root_dir, "B1", "b1_gamma_performance.png"
+# )
 
 def initial_config(warnings_off=True, cpu_only_training=False):
     """
-        Initial configuration for the project.
-        :param warnings_off: Disable tensorflow warnings
-        :param cpu_only_training: Disable GPU usage
-        :return: None
+    Initial configuration for the project.
+    :param warnings_off: Disable tensorflow warnings
+    :param cpu_only_training: Disable GPU usage
+    :return: None
     """
     # Disable tensorflow warnings
-    # os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+    if warnings_off:
+        os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
     # Setup logging
     logging.basicConfig(
@@ -96,7 +116,7 @@ def initial_config(warnings_off=True, cpu_only_training=False):
     logger.setLevel(logging.DEBUG)
 
     # Check if GPU(s) are available, limit memory growth
-    gpus = tf.config.experimental.list_physical_devices('GPU')
+    gpus = tf.config.experimental.list_physical_devices("GPU")
     if len(gpus) > 0:
         for gpu in gpus:
             try:
@@ -106,23 +126,17 @@ def initial_config(warnings_off=True, cpu_only_training=False):
     elif cpu_only_training:
         logger.warning("No GPU found. Attempting to train on CPU...\n")
     else:
-        raise Exception("No GPU found. Quitting...\n You can change this behaviour by setting the cpu_only_training flag to True.")
+        raise Exception(
+            "No GPU found. Quitting...\n You can change this behaviour by setting the cpu_only_training flag to True."
+        )
 
     try:
         paths = []
-        # paths.append(cartoon_features_dir)
-        # paths.append(cartoon_features_train_dir)
-        # paths.append(cartoon_features_test_img_dir)
-        paths.append(cartoon_resized_images_path)
-        paths.append(cartoon_test_resized_images_path)
-        paths.append(cartoon_resized_gray_images_path)
-        paths.append(cartoon_test_resized_gray_images_path)
         paths.append(cartoon_eyes_dir)
         paths.append(cartoon_test_eyes_dir)
         paths.append(cartoon_jaws_dir)
         paths.append(cartoon_test_jaws_dir)
-        
-        
+
         for path in paths:
             if not os.path.exists(path):
                 os.makedirs(path)
@@ -130,7 +144,7 @@ def initial_config(warnings_off=True, cpu_only_training=False):
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise Exception(f"Error creating directories: {e}")
-    
+            exit(1)
     return logger
 
 
@@ -158,7 +172,9 @@ def helper_plot_confusion_matrix(figure_save_path, confusion_matrix):
     )
     plt.xlabel("Predicted Label", fontsize=20)
     plt.ylabel("True Label", fontsize=20)
-    plt.title(f"SVM model confusion matrix\nTotal: {total_elements} elements", fontsize=16)
+    plt.title(
+        f"SVM model confusion matrix\nTotal: {total_elements} elements", fontsize=16
+    )
     plt.savefig(figure_save_path, dpi=300)
 
 
@@ -225,7 +241,9 @@ def plot_performance(accuracy, val_accuracy, loss, val_loss, title=None):
     plt.savefig(os.path.join(graphs_dir, "history.png"))
 
 
-def plot_confusion_matrix(logger, class_labels, predicted_labels, true_labels, title=None):
+def plot_confusion_matrix(
+    logger, class_labels, predicted_labels, true_labels, title=None
+):
     """
     Plots the confusion matrix given both the true and predicted results.
     :param class_labels: list of the names of the labels.
@@ -263,5 +281,3 @@ def plot_confusion_matrix(logger, class_labels, predicted_labels, true_labels, t
     # Print a detailed report on the classification results
     logger.info("\nClassification Report:\n")
     logger.info(classification_report(true_labels, predicted_labels))
-
-

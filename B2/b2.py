@@ -1,3 +1,7 @@
+""" B2: Convolutional Neural Network (CNN)
+
+This is a simple CNN model used for image classification.
+"""
 from helper_utils import *
 import os
 import cv2
@@ -12,41 +16,54 @@ from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.metrics import accuracy_score
 
 
-# MNIST dataset parameters.
-num_classes = 5  # total classes (0-9 digits).
+num_classes = 5  # total output classes (0-9 digits).
 
 # Training parameters.
 learning_rate = 0.001
 
 # Network parameters.
-conv1_filters = 32  # number of filters for 1st conv layer.
-conv2_filters = 64  # number of filters for 2nd conv layer.
+conv1_filters = 16  # number of filters for 1st conv layer.
+conv2_filters = 32  # number of filters for 2nd conv layer.
+conv3_filters = 64  # number of filters for 3rd conv layer.
 fc1_units = 1024  # number of neurons for 1st fully-connected layer.
 
 
-# Create TF Model.
 class B2:
-    # Set layers.
     def __init__(self, input_shape):
         self.model = Sequential(
             [
-                # Convolution Layer with 32 filters and a kernel size of 5.
-                # Conv2D(32, kernel_size=(5, 5), activation="relu", input_shape=input_shape),
-                Conv2D(filters=16, kernel_size=(3, 3), activation="relu", input_shape=input_shape, padding="same"),
+                # Convolution Layer with conv1_filters filters and a kernel size of 3.
+                Conv2D(
+                    filters=conv1_filters,
+                    kernel_size=(3, 3),
+                    activation="relu",
+                    input_shape=input_shape,
+                    padding="same",
+                ),
                 # Max Pooling (down-sampling) with kernel size of 2 and strides of 2.
                 MaxPooling2D(pool_size=(2, 2), strides=2),
-                # Convolution Layer with 64 filters and a kernel size of 3.
-                Conv2D(filters=32, kernel_size=(3, 3), activation="relu", padding="same"),
+                # Convolution Layer with conv2_filters filters and a kernel size of 3.
+                Conv2D(
+                    filters=conv2_filters,
+                    kernel_size=(3, 3),
+                    activation="relu",
+                    padding="same",
+                ),
                 # Max Pooling (down-sampling) with kernel size of 2 and strides of 2.
                 MaxPooling2D(pool_size=(2, 2), strides=2),
-                # Convolution Layer with 64 filters and a kernel size of 3.
-                Conv2D(filters=64, kernel_size=(3, 3), activation="relu", padding="same"),
+                # Convolution Layer with conv3_filters filters and a kernel size of 3.
+                Conv2D(
+                    filters=conv3_filters,
+                    kernel_size=(3, 3),
+                    activation="relu",
+                    padding="same",
+                ),
                 # Max Pooling (down-sampling) with kernel size of 2 and strides of 2.
                 MaxPooling2D(pool_size=(2, 2), strides=2),
                 # Flatten the data to a 1-D vector for the fully connected layer.
                 Flatten(),
                 # Fully connected layer.
-                # Dense(1024, activation="relu"),
+                # Dense(fc1_units, activation="relu"),
                 # Apply Dropout.
                 Dropout(0.5),
                 # Output layer, class prediction.
@@ -89,7 +106,9 @@ class B2:
     def evaluate(self, test_batches, verbose=1):
         return self.model.evaluate(x=test_batches, verbose=verbose)
 
-    def test(self, logger, test_batches, verbose=1, confusion_mesh=True, class_labels="auto"):
+    def test(
+        self, logger, test_batches, verbose=1, confusion_mesh=True, class_labels="auto"
+    ):
         predictions = self.model.predict(
             x=test_batches, steps=len(test_batches), verbose=verbose
         )

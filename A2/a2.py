@@ -1,4 +1,4 @@
-""" A1: Support Vector Machines
+""" A2: Support Vector Machines
 
 This module contains the code for the first assignment of the course. It contains the code for the SVM classifier.
 """
@@ -28,7 +28,7 @@ gamma = [10, 1, 0.1, 0.01]
 kernel = ["linear"]
 
 
-class A1:
+class A2:
     def __init__(self, train_data, train_labels, test_data, test_labels, logger):
         self.train_data = train_data
         self.train_labels = train_labels
