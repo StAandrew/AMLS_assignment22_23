@@ -1,3 +1,19 @@
+""" Data processing functions.
+
+This file contains the functions used to process the data.
+Some of the functions are taken from the dlib's documentation and credit is give in function docuemntation.
+
+Face detector can find frontal human faces in an image using 68 landmarks.  These are points on the face such as the corners of the mouth, along the eyebrows, on the eyes, and so forth.
+File 'shape_predictor_68_face_landmarks.dat' is necessary can be downloaded from: http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
+The face detector is made using the classic Histogram of Oriented Gradients (HOG) feature combined with a linear classifier, an image pyramid, and sliding window detection scheme.
+The pose estimator was created by using dlib's implementation of the paper:
+One Millisecond Face Alignment with an Ensemble of Regression Trees by Vahid Kazemi and Josephine Sullivan, CVPR 2014
+and was trained on the iBUG 300-W face landmark dataset (see https://ibug.doc.ic.ac.uk/resources/facial-point-annotations/):
+    C. Sagonas, E. Antonakos, G, Tzimiropoulos, S. Zafeiriou, M. Pantic.
+    300 faces In-the-wild challenge: Database and results.
+    Image and Vision Computing (IMAVIS), Special Issue on Facial Landmark Localisation "In-The-Wild". 2016.
+"""
+
 from helper_utils import *
 import cv2
 from cv2 import IMREAD_COLOR, IMREAD_GRAYSCALE
@@ -22,7 +38,6 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 #     300 faces In-the-wild challenge: Database and results.
 #     Image and Vision Computing (IMAVIS), Special Issue on Facial Landmark Localisation "In-The-Wild". 2016.
 
-
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(
     os.path.join(root_dir, "shape_predictor_68_face_landmarks.dat")
@@ -30,84 +45,119 @@ predictor = dlib.shape_predictor(
 
 
 def shape_to_np(shape, dtype="int"):
-    # initialize the list of (x, y)-coordinates
-    coords = np.zeros((shape.num_parts, 2), dtype=dtype)
+    """This function converts dlib's shape to a NumPy array.
 
-    # loop over all facial landmarks and convert them
-    # to a 2-tuple of (x, y)-coordinates
+    Default function from dlib's documentation.
+    Takes the (x, y)-coordinates for the facial landmarks and converts them to a NumPy array
+    of (x, y)-coordinates. Returns a NumPy array of (x, y)-coordinates.
+
+    :param shape: dlib's shape.
+    :param dtype: Data type of the output array.
+    :return: coords: NumPy array of (x, y)-coordinates.
+    """
+
+    coords = np.zeros((shape.num_parts, 2), dtype=dtype)
     for i in range(0, shape.num_parts):
         coords[i] = (shape.part(i).x, shape.part(i).y)
-
-    # return the list of (x, y)-coordinates
     return coords
 
 
 def rect_to_bb(rect):
-    # take a bounding predicted by dlib and convert it
-    # to the format (x, y, w, h) as we would normally do
-    # with OpenCV
+    """This function converts dlib's rectangle to a OpenCV-style bounding box.
+
+    Default function from dlib's documentation.
+    Takes a bounding predicted by dlib and converts it to the format (x, y, w, h) with OpenCV
+
+    :param rect: dlib's rectangle.
+    :return: (x, y, w, h): OpenCV-style bounding box.
+    """
+
     x = rect.left()
     y = rect.top()
     w = rect.right() - x
     h = rect.bottom() - y
-
-    # return a tuple of (x, y, w, h)
     return (x, y, w, h)
 
 
 def run_dlib_shape(image):
-    # in this function we load the image, detect the landmarks of the face, and then return the image and the landmarks
-    # load the input image, resize it, and convert it to grayscale
-    resized_image = image.astype("uint8")
+    """This function runs dlib's shape predictor on the input image.
 
-    # detect faces in the grayscale image
+    Default function from dlib's documentation, modified according to our needs.
+    Takes a grayscale image, detects faces in it, and then loops over the face detections.
+    For each face, it determines the facial landmarks for the face region, then converts the facial landmark (x, y)-coordinates to a NumPy array.
+    It then converts dlib's rectangle to a OpenCV-style bounding box.
+    Finally, it finds the largest face and keeps it.
+    Returns the output of dlib's shape predictor and the resized image.
+
+    :param image: Input image.
+    :return: dlibout: Output of dlib's shape predictor.
+    :return: resized_image: Resized image.
+    """
+
+    resized_image = image.astype("uint8")
     rects = detector(resized_image, 1)
     num_faces = len(rects)
-
     if num_faces == 0:
         return None, resized_image
-
     face_areas = np.zeros((1, num_faces))
     face_shapes = np.zeros((136, num_faces), dtype=np.int64)
-
-    # loop over the face detections
     for (i, rect) in enumerate(rects):
-        # determine the facial landmarks for the face region, then
-        # convert the facial landmark (x, y)-coordinates to a NumPy
-        # array
         temp_shape = predictor(resized_image, rect)
         temp_shape = shape_to_np(temp_shape)
-
-        # convert dlib's rectangle to a OpenCV-style bounding box
-        # [i.e., (x, y, w, h)],
-        #   (x, y, w, h) = face_utils.rect_to_bb(rect)
         (x, y, w, h) = rect_to_bb(rect)
         face_shapes[:, i] = np.reshape(temp_shape, [136])
         face_areas[0, i] = w * h
-    # find largest face and keep
     dlibout = np.reshape(np.transpose(face_shapes[:, np.argmax(face_areas)]), [68, 2])
-
     return dlibout, resized_image
 
 
-def load_datasets(dataset_img_path, dataset_labels_path, filename_column_name, feature_1_column_name, feature_2_column_name, grayscale=True):
+def load_datasets(
+    dataset_img_path,
+    dataset_labels_path,
+    filename_column_name,
+    feature_1_column_name,
+    feature_2_column_name,
+    grayscale=True,
+):
+    """This function loads the images and labels from the dataset.
+
+    The function loads the images and labels from the dataset and returns them.
+    Maps -1 to 0 (for CelebA dataset) in order to use uint data type.
+
+    Parameters
+    ----------
+    dataset_img_path : str
+        Path to the folder containing images.
+    dataset_labels_path : str
+        Path to the csv file containing labels.
+    filename_column_name : str
+        Name of the column containing the image file names.
+    feature_1_column_name : str
+        Name of the column containing the first feature.
+    feature_2_column_name : str
+        Name of the column containing the second feature.
+    grayscale : bool, optional
+        Whether to load the images in grayscale or not. The default is True.
     """
-    This function loads the images and labels from the dataset.
-    :param dataset_img_path:        path to the folder containing the images
-    :param dataset_labels_path:     path to the CSV file containing the labels
-    :param label_column_name:       name of the column containing the labels
-    :param filename_column_name:    name of the column containing the filenames
-    :param grayscale:               if True, the images are converted to grayscale
-    :return:                        labels and images
-    """
+
     try:
-        labels_df = pd.read_csv(dataset_labels_path, skipinitialspace=True, sep="\t").drop(['Unnamed: 0'],axis=1)
-        sample_image = cv2.imread(os.path.join(dataset_img_path, labels_df.loc[0, filename_column_name]), IMREAD_COLOR)
-        # sample_image = np.int8(sample_image)
+        labels_df = pd.read_csv(
+            dataset_labels_path, skipinitialspace=True, sep="\t"
+        ).drop(["Unnamed: 0"], axis=1)
+        sample_image = cv2.imread(
+            os.path.join(dataset_img_path, labels_df.loc[0, filename_column_name]),
+            IMREAD_COLOR,
+        )
         if grayscale:
-            images = np.zeros((len(labels_df), sample_image.shape[0], sample_image.shape[1], 4), dtype=np.uint16)
+            images = np.zeros(
+                (len(labels_df), sample_image.shape[0], sample_image.shape[1], 4),
+                dtype=np.uint16,
+            )
         else:
-            images = np.zeros((len(labels_df), sample_image.shape[0], sample_image.shape[1], 3, 4), dtype=np.uint16)
+            images = np.zeros(
+                (len(labels_df), sample_image.shape[0], sample_image.shape[1], 3, 4),
+                dtype=np.uint16,
+            )
         for i in range(len(labels_df)):
             label_name = labels_df.loc[i, filename_column_name]
             img = cv2.imread(os.path.join(dataset_img_path, label_name), IMREAD_COLOR)
@@ -134,26 +184,26 @@ def load_datasets(dataset_img_path, dataset_labels_path, filename_column_name, f
         return images, labels_df
     except:
         return None, None
-    
+
 
 def save_dataset(feature_arr, dataset_feature_arr_path):
-    """ This function saves the features to disk. 
-    :param feature_arr:             array containing the features
-    :param dataset_feature_arr_path: path to the array containing the features
+    """This function saves the features to disk.
+    :param feature_arr:                 array containing the features
+    :param dataset_feature_arr_path:    path to the array containing the features
     """
     np.savez(dataset_feature_arr_path, feature_arr)
 
 
 def load_features(dataset_features_arr_path, dataset_labels_path):
-    """ This function loads the labels and features from disk.
-    :param dataset_labels_path:     path to the CSV file containing the labels
-    :param dataset_feature_arr_path: path to the array containing the features
-    :return:                        features and labels
+    """This function loads the labels and features from disk.
+    :param dataset_labels_path:         path to the CSV file containing the labels
+    :param dataset_feature_arr_path:    path to the array containing the features
+    :return:                            features and labels
     """
     try:
         labels_df = pd.read_csv(dataset_labels_path, skipinitialspace=True, sep="\t")
-        feature_arr_file = np.load(dataset_features_arr_path, allow_pickle = True)
-        feature_arr = feature_arr_file['arr_0']
+        feature_arr_file = np.load(dataset_features_arr_path, allow_pickle=True)
+        feature_arr = feature_arr_file["arr_0"]
         feature_arr = np.array(feature_arr)
     except:
         return None, None
@@ -161,16 +211,15 @@ def load_features(dataset_features_arr_path, dataset_labels_path):
 
 
 def extract_face_features(images, grayscale=True):
-    """
-    This function extracts the face features from images.
-    
+    """This function extracts the face features from images.
+
     Parameters
     ----------
     images : numpy array
         Array containing images.
     grayscale : bool, optional
-        If the images are grayscale. The default is True.
-    
+        Whether the images are grayscale or not. The default is True.
+
     Returns
     -------
     all_features : numpy array
@@ -204,91 +253,11 @@ def extract_face_features(images, grayscale=True):
     return all_features
 
 
-def crop_resize_images_func(new_size, images, grayscale=True):
-    """
-    This function crops and resizes the images.
-    
-    Parameters
-    ----------
-    new_size : tuple
-        The new size of the images.
-    images : array
-        The images to be cropped and resized.
-    grayscale : bool, optional
-        If the images are grayscale. The default is True.
-    
-    Returns
-    -------
-    resized_images : array
-        The resized images.
-    """
+def extract_eye_rectangle_remove_glasses(
+    logger, images, labels_df, eye_rect, black_rect, grayscale=True
+):
+    """Extracts the eye rectangle from the images and removes the glasses from the images.
 
-    new_w = new_size[0]
-    new_h = new_size[1]
-
-    min_x = images[0].shape[0]
-    min_y = images[0].shape[1]
-    max_w = 0
-    max_h = 0
-        
-    # find the minimum and maximum width and height of the images
-    for i in range(len(images)):
-        if grayscale:
-            image = images[i, :, :, 0]
-            image = image.astype(np.uint8)
-        else:
-            bgr_image = images[i, :, :, :, 0]
-            bgr_image = bgr_image.astype(np.uint8)
-            image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2GRAY)
-        tmp_image = image.copy()
-        tmp_image[150:300, 160:340] = 0
-        tmp_image[300:370, 220:280] = 0
-        _, im = cv2.threshold(tmp_image, 225, 255, cv2.THRESH_BINARY_INV)
-        contours = cv2.findContours(im, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours = contours[0] if len(contours) == 2 else contours[1]
-        contours = sorted(contours, key=cv2.contourArea, reverse=True)
-        for c in contours:
-            x,y,w,h = cv2.boundingRect(c)
-            break
-        if x < min_x:
-            min_x = x
-        if y < min_y:
-            min_y = y
-        if h > max_h:
-            max_h = h
-        if w > max_w:
-            max_w = w
-    # cretate a new array for the resized images
-    if grayscale:
-        resized_images = np.zeros((len(images), new_h, new_w, len(images[0, 0, 0, :])), dtype=np.uint16)
-    else:
-        resized_images = np.zeros((len(images), new_h, new_w, 3, len(images[0, 0, 0, 0, :])), dtype=np.uint16)
-
-    # resize images
-    for i in range(len(images)):
-        if grayscale:
-            image = images[i, :, :, 0]
-            image = image.astype(np.uint8)
-            cropped_image = image[min_y:min_y+max_h, min_x:min_x+max_w]
-            resized_image = cv2.resize(cropped_image, new_size)
-            resized_images[i, :, :, 0] = resized_image
-            for j in range(len(images[i, 0, 0, :])):
-                resized_images[i, 0, 0, j] = images[i, 0, 0, j]
-        else:
-            image = images[i, :, :, :, 0]
-            image = image.astype(np.uint8)
-            cropped_image = image[min_y:min_y+max_h, min_x:min_x+max_w]
-            resized_image = cv2.resize(cropped_image, new_size)
-            resized_images[i, :, :, :, 0] = resized_image
-            for j in range(len(images[i, 0, 0, 0, :])):
-                resized_images[i, 0, 0, 0, j] = images[i, 0, 0, 0, j]
-    return resized_images
-
-
-def extract_eye_rectangle_remove_glasses(logger, images, labels_df, eye_rect, black_rect, grayscale=True):
-    """
-    Extracts the eye rectangle from the images and removes the glasses from the images.
-    
     Parameters
     ----------
     logger : logging.Logger
@@ -301,7 +270,7 @@ def extract_eye_rectangle_remove_glasses(logger, images, labels_df, eye_rect, bl
         Dimensions of eye rectangle.
     grayscale : bool, optional
         Whether the images are grayscale or not. The default is True.
-    
+
     Returns
     -------
     eye_array : numpy.ndarray
@@ -311,17 +280,28 @@ def extract_eye_rectangle_remove_glasses(logger, images, labels_df, eye_rect, bl
     """
 
     if grayscale:
-        logger.error("Cannot run this extract eye rectangle function on grayscale images. Please set grayscale=False.")
+        logger.error(
+            "Cannot run this extract eye rectangle function on grayscale images. Please set grayscale=False."
+        )
         exit()
     eye_rect = (248, 275, 190, 225)
-    eye_array = np.zeros((len(images), eye_rect[1]-eye_rect[0], eye_rect[3]-eye_rect[2], 3, len(images[0, 0, 0, 0, :])), dtype=np.uint16)
+    eye_array = np.zeros(
+        (
+            len(images),
+            eye_rect[1] - eye_rect[0],
+            eye_rect[3] - eye_rect[2],
+            3,
+            len(images[0, 0, 0, 0, :]),
+        ),
+        dtype=np.uint16,
+    )
     new_labels_numbers = []
     new_i = 0
     for i in range(len(images)):
         image = images[i, :, :, :, 0]
         image = image.astype(np.uint8)
         eye_img = image.copy()
-        eye_img = eye_img[eye_rect[0]:eye_rect[1], eye_rect[2]:eye_rect[3]]
+        eye_img = eye_img[eye_rect[0] : eye_rect[1], eye_rect[2] : eye_rect[3]]
         avg = np.mean(eye_img)
         if avg > 60:
             for j in range(len(images[0, 0, 0, 0, :])):
@@ -334,9 +314,18 @@ def extract_eye_rectangle_remove_glasses(logger, images, labels_df, eye_rect, bl
     return eye_array, new_labels_df
 
 
-def extract_jaw_rectangle_remove_beards(logger, images, labels_df, jaw_rect, black_rects, reference_colour_position, check_colour_position, remove_beards=False, grayscale=True):
-    """ 
-    Crops the images and removes selected areas (black_rects) from the images.
+def extract_jaw_rectangle_remove_beards(
+    logger,
+    images,
+    labels_df,
+    jaw_rect,
+    black_rects,
+    reference_colour_position,
+    check_colour_position,
+    remove_beards=False,
+    grayscale=True,
+):
+    """Crops the images and removes selected areas (black_rects) from the images.
 
     Parameters
     ----------
@@ -358,7 +347,7 @@ def extract_jaw_rectangle_remove_beards(logger, images, labels_df, jaw_rect, bla
         Whether to remove images that contain full beards or not. The default is False.
     grayscale : bool, optional
         Whether the images are grayscale or not. The default is True.
-    
+
     Returns
     -------
     jaw_array : numpy.ndarray
@@ -368,19 +357,31 @@ def extract_jaw_rectangle_remove_beards(logger, images, labels_df, jaw_rect, bla
     """
 
     if grayscale:
-        jaw_array = np.zeros((len(images), jaw_rect[1]-jaw_rect[0], jaw_rect[3]-jaw_rect[2], len(images[0, 0, 0, :])), dtype=np.uint16)
+        jaw_array = np.zeros(
+            (
+                len(images),
+                jaw_rect[1] - jaw_rect[0],
+                jaw_rect[3] - jaw_rect[2],
+                len(images[0, 0, 0, :]),
+            ),
+            dtype=np.uint16,
+        )
         new_labels_numbers = []
         new_i = 0
         for i in range(len(images)):
             image = images[i, :, :, 0]
             image = image.astype(np.uint8)
-            reference_colour = image[reference_colour_position[0], reference_colour_position[1]]
+            reference_colour = image[
+                reference_colour_position[0], reference_colour_position[1]
+            ]
             check_colour = image[check_colour_position[0], check_colour_position[1]]
             if not (remove_beards and np.array_equal(reference_colour, check_colour)):
                 jaw_img = image.copy()
                 for black_rect in black_rects:
-                    jaw_img[black_rect[0]:black_rect[1], black_rect[2]:black_rect[3]] = 0
-                jaw_img = jaw_img[jaw_rect[0]:jaw_rect[1], jaw_rect[2]:jaw_rect[3]]
+                    jaw_img[
+                        black_rect[0] : black_rect[1], black_rect[2] : black_rect[3]
+                    ] = 0
+                jaw_img = jaw_img[jaw_rect[0] : jaw_rect[1], jaw_rect[2] : jaw_rect[3]]
                 for j in range(len(images[0, 0, 0, :])):
                     jaw_array[new_i, 0, 0, j] = images[i, 0, 0, j]
                 jaw_array[new_i, :, :, 0] = jaw_img
@@ -389,19 +390,34 @@ def extract_jaw_rectangle_remove_beards(logger, images, labels_df, jaw_rect, bla
         new_labels_df = labels_df.iloc[new_labels_numbers, :].reset_index(drop=True)
         jaw_array = jaw_array[:new_i, :, :, :]
     else:
-        jaw_array = np.zeros((len(images), jaw_rect[1]-jaw_rect[0], jaw_rect[3]-jaw_rect[2], 3, len(images[0, 0, 0, 0, :])), dtype=np.uint16)
+        jaw_array = np.zeros(
+            (
+                len(images),
+                jaw_rect[1] - jaw_rect[0],
+                jaw_rect[3] - jaw_rect[2],
+                3,
+                len(images[0, 0, 0, 0, :]),
+            ),
+            dtype=np.uint16,
+        )
         new_labels_numbers = []
         new_i = 0
         for i in range(len(images)):
             image = images[i, :, :, :, 0]
             image = image.astype(np.uint8)
-            reference_colour = image[reference_colour_position[0], reference_colour_position[1], :]
+            reference_colour = image[
+                reference_colour_position[0], reference_colour_position[1], :
+            ]
             check_colour = image[check_colour_position[0], check_colour_position[1], :]
             if not (remove_beards and np.array_equal(reference_colour, check_colour)):
                 jaw_img = image.copy()
-                jaw_img[black_rect1[0]:black_rect1[1], black_rect1[2]:black_rect1[3]] = 0
-                jaw_img[black_rect2[0]:black_rect2[1], black_rect2[2]:black_rect2[3]] = 0
-                jaw_img = jaw_img[jaw_rect[0]:jaw_rect[1], jaw_rect[2]:jaw_rect[3]]
+                jaw_img[
+                    black_rect1[0] : black_rect1[1], black_rect1[2] : black_rect1[3]
+                ] = 0
+                jaw_img[
+                    black_rect2[0] : black_rect2[1], black_rect2[2] : black_rect2[3]
+                ] = 0
+                jaw_img = jaw_img[jaw_rect[0] : jaw_rect[1], jaw_rect[2] : jaw_rect[3]]
                 for j in range(len(images[0, 0, 0, 0, :])):
                     jaw_array[new_i, 0, 0, 0, j] = images[i, 0, 0, 0, j]
                 jaw_array[new_i, :, :, :, 0] = jaw_img
@@ -412,11 +428,35 @@ def extract_jaw_rectangle_remove_beards(logger, images, labels_df, jaw_rect, bla
     return jaw_array, new_labels_df
 
 
-def check_if_dataset_present(dataset_img_path, dataset_labels_path, filename_column_name):
+def check_if_dataset_present(
+    dataset_img_path, dataset_labels_path, filename_column_name
+):
+    """Checks if the data and labels are present.
+
+    Checks if the directories exist and are not empty.
+    Checks if the labels contain the filename column.
+
+    Parameters
+    ----------
+    dataset_img_path : str
+        Path to the dataset images.
+    dataset_labels_path : str
+        Path to the dataset labels.
+    filename_column_name : str
+        Name of the filename column in the labels dataframe.
+
+    Returns
+    -------
+    bool
+        True if the dataset is present, False otherwise.
+    """
+
     try:
         if os.path.exists(dataset_img_path) and os.path.exists(dataset_labels_path):
             img_dir = os.listdir(dataset_img_path)
-            dataset_labels = pd.read_csv(dataset_labels_path, skipinitialspace=True, sep="\t").drop(['Unnamed: 0'],axis=1)
+            dataset_labels = pd.read_csv(
+                dataset_labels_path, skipinitialspace=True, sep="\t"
+            ).drop(["Unnamed: 0"], axis=1)
             if len(os.listdir(dataset_img_path)) == 0:
                 return False
             if filename_column_name in dataset_labels.columns:
@@ -431,6 +471,13 @@ def check_if_dataset_present(dataset_img_path, dataset_labels_path, filename_col
 
 
 def save_resized_images(resized_images, resized_images_path, grayscale=True):
+    """Saves the resized images.
+
+    :param resized_images:          Resized images.
+    :param resized_images_path:     Path to the resized images.
+    :param grayscale:               If the images are grayscale.
+    """
+
     for i in range(len(resized_images)):
         if grayscale:
             img = resized_images[i, :, :, 0]
@@ -448,6 +495,13 @@ def save_resized_images(resized_images, resized_images_path, grayscale=True):
 
 
 def save_dataframe(logger, dataframe, dataframe_path):
+    """Saves the dataframe.
+
+    :param logger:          Logger.
+    :param dataframe:       Dataframe to save.
+    :param dataframe_path:  Path to the dataframe.
+    """
+
     try:
         dataframe.to_csv(dataframe_path, sep="\t")
     except Exception as e:
@@ -456,46 +510,83 @@ def save_dataframe(logger, dataframe, dataframe_path):
 
 
 def extract_jawline_features(feature_arr):
-    """
-    This function extracts the jawline features from the landmark features.
+    """Extracts the jawline features from the landmark features.
     :param feature_arr:     array containing the landmark features
     :return:                array containing the jawline features
     """
+
     start_index = 0
     end_index = 16
-    jawline_arr = np.zeros((len(feature_arr), end_index-start_index+1, 2, 4))
+    jawline_arr = np.zeros((len(feature_arr), end_index - start_index + 1, 2, 4))
     for i in range(len(feature_arr)):
-        jawline_arr[i, :, :, :] = feature_arr[i][start_index:end_index+1]
+        jawline_arr[i, :, :, :] = feature_arr[i][start_index : end_index + 1]
         for j in range(len(feature_arr[i, 0, 0, :])):
             jawline_arr[i, 0, 0, j] = feature_arr[i, 0, 0, j]
     return jawline_arr
 
 
 def extract_smile_features(feature_arr):
-    """
-    This function extracts the smile features from the landmark features.
+    """Extracts the smile features from the landmark features.
     :param feature_arr:     array containing the landmark features
     :return:                array containing the smile features
     """
+
     start_index = 48
     end_index = 67
-    smile_arr = np.zeros((len(feature_arr), end_index-start_index+1, 2, 4))
+    smile_arr = np.zeros((len(feature_arr), end_index - start_index + 1, 2, 4))
     for i in range(len(feature_arr)):
-        smile_arr[i, :, :, :] = feature_arr[i][start_index:end_index+1]
+        smile_arr[i, :, :, :] = feature_arr[i][start_index : end_index + 1]
         for j in range(len(feature_arr[i, 0, 0, :])):
             smile_arr[i, 0, 0, j] = feature_arr[i, 0, 0, j]
     return smile_arr
 
 
-def shuffle_split(images_dataset, labels_df, filename_column_name, feature_1_column_name, feature_2_column_name, needed_feature_column_name, test_size, logger, grayscale=True):
+def shuffle_split(
+    images_dataset,
+    labels_df,
+    filename_column_name,
+    feature_1_column_name,
+    feature_2_column_name,
+    needed_feature_column_name,
+    test_size,
+    logger,
+    grayscale=True,
+):
+    """Splits the dataset into a training and a test set.
+
+    Parameters
+    ----------
+    images_dataset : numpy.ndarray
+        Dataset containing the images.
+    labels_df : pandas.DataFrame
+        Dataframe containing the labels.
+    filename_column_name : str
+        Name of the filename column in the labels dataframe.
+    feature_1_column_name : str
+        Name of the first feature column in the labels dataframe.
+    feature_2_column_name : str
+        Name of the second feature column in the labels dataframe.
+    needed_feature_column_name : str
+        Name of the feature column that is needed for the training.
+    test_size : float
+        Size of the test set.
+    logger : logging.Logger
+        Logger.
+    grayscale : bool, optional
+        Whether the images are grayscale or not. The default is True.
+
+    Returns
+    -------
+    img_train : numpy.ndarray
+        Training set.
+    img_test : numpy.ndarray
+        Test set.
+    labels_train : pandas.DataFrame
+        Training labels.
+    labels_test : pandas.DataFrame
+        Test labels.
     """
-    This function splits the dataset into a training and a test set.
-    :param images_dataset:      array containing the images
-    :param labels_df:           dataframe containing the labels
-    :param column_name:         name of the column containing the labels
-    :param test_size:           percentage of the dataset to be used as test set
-    :return:                    training and test set
-    """
+
     # get the column number
     if needed_feature_column_name == filename_column_name:
         column_number = 1
@@ -546,7 +637,7 @@ def shuffle_split(images_dataset, labels_df, filename_column_name, feature_1_col
         img_train = img_train[:, :, :, :, 0]
         img_test = img_test[:, :, :, :, 0]
     # convert the labels to a 1D array
-    label_train = label_train.ravel()    
+    label_train = label_train.ravel()
     label_test = label_test.ravel()
     # cast images into uint8
     img_train = img_train.astype(np.uint8)
@@ -556,80 +647,123 @@ def shuffle_split(images_dataset, labels_df, filename_column_name, feature_1_col
 
 
 def data_reshape(data):
-    """
-    This function reshapes the data to be used in the SVM.
+    """This function reshapes the data to be used in the SVM.
     :param data:    array containing the data
     :return:        reshaped array
     """
+
     nsamples, nx, ny = data.shape
-    reshaped_data = data.reshape(nsamples,nx*ny)
+    reshaped_data = data.reshape(nsamples, nx * ny)
     return reshaped_data
 
 
-def shuffle_split_into_batches():
-    # make batches
-    training_data = tf.data.Dataset.from_tensor_slices((img_train, label_train))
-    training_batches = (
-        training_data.shuffle(len(training_data)).batch(batch_size, drop_remainder=True).prefetch(1)
-    )
-    validation_data = tf.data.Dataset.from_tensor_slices((img_validate, label_validate))
-    validation_batches = (
-        validation_data.shuffle(len(validation_data)).batch(batch_size, drop_remainder=True).prefetch(1)
-    )
-    test_data = tf.data.Dataset.from_tensor_slices((img_test, label_test))
-    test_batches = (
-        test_data.shuffle(len(test_data)).batch(batch_size, drop_remainder=True).prefetch(1)
-    )
-    return training_batches, validation_batches, test_batches
+def data_split_preparation(
+    data_dir,
+    labels_path,
+    filename_column,
+    target_column,
+    img_size,
+    validation_size,
+    batch_size=16,
+    color_mode="grayscale",
+):
+    """Prepares the data for the training and validation.
 
+    Parameters
+    ----------
+    data_dir : str
+        Path to the directory containing the images.
+    labels_path : str
+        Path to the file containing the labels.
+    filename_column : str
+        Name of the column containing the filenames.
+    target_column : str
+        Name of the column containing the labels.
+    img_size : tuple
+        Size of the images.
+    validation_size : float
+        Percentage of the dataset to be used for validation.
+    batch_size : int (default: 16)
+        Size of the batches.
+    color_mode : str
+        Color mode of the images. Can be "grayscale" or "rgb".
 
-def batches_to_arrays(batches):
+    Returns
+    -------
+    training_batches : ImageDataGenerator
+        Training batches.
+    validation_batches : ImageDataGenerator
+        Validation batches.
     """
-    This function converts the batches into arrays.
-    :param batches:     batches of images and labels
-    :return:            arrays of images and labels
-    """
-    batches = batches.unbatch()
-    images = np.array(list(x for x, y in batches))
-    labels = np.array(list(y for x, y in batches))
-    return images, labels
 
-
-def data_split_preparation(data_dir, labels_path, filename_column, target_column, img_size, validation_size, batch_size=16, color_mode="grayscale"):
-    labels_df = pd.read_csv(labels_path, sep="\t", engine="python", header=0, dtype='str')
-    image_generator = ImageDataGenerator(rescale=1. / 255., validation_split=validation_size)
+    labels_df = pd.read_csv(
+        labels_path, sep="\t", engine="python", header=0, dtype="str"
+    )
+    image_generator = ImageDataGenerator(
+        rescale=1.0 / 255.0, validation_split=validation_size
+    )
     training_batches = image_generator.flow_from_dataframe(
-        subset="training", 
-        dataframe=labels_df, 
+        subset="training",
+        dataframe=labels_df,
         directory=data_dir,
-        x_col=filename_column, 
+        x_col=filename_column,
         y_col=target_column,
-        color_mode=color_mode, 
+        color_mode=color_mode,
         target_size=img_size,
-        batch_size=batch_size, 
+        batch_size=batch_size,
         seed=42,
-        shuffle=True, 
-        class_mode='categorical',
+        shuffle=True,
+        class_mode="categorical",
     )
     validation_batches = image_generator.flow_from_dataframe(
         subset="validation",
-        dataframe=labels_df, 
+        dataframe=labels_df,
         directory=data_dir,
-        x_col=filename_column, 
-        y_col=target_column, 
-        color_mode=color_mode, 
+        x_col=filename_column,
+        y_col=target_column,
+        color_mode=color_mode,
         target_size=img_size,
-        batch_size=batch_size, 
-        seed=42, 
+        batch_size=batch_size,
+        seed=42,
         shuffle=True,
-        class_mode='categorical',
+        class_mode="categorical",
     )
     return training_batches, validation_batches
 
 
-def data_preparation(data_dir, labels_path, filename_column, target_column, img_size, batch_size=16, color_mode="grayscale"):
-    labels_df = pd.read_csv(labels_path, sep="\t", engine="python", header=0, dtype='str')
-    image_generator = ImageDataGenerator(rescale=1. / 255.)
+def data_preparation(
+    data_dir,
+    labels_path,
+    filename_column,
+    target_column,
+    img_size,
+    batch_size=16,
+    color_mode="grayscale",
+):
+    """Prepares the data for the training and validation.
+
+    Parameters
+    ----------
+    data_dir : str
+        Path to the directory containing the images.
+    labels_path : str
+        Path to the file containing the labels.
+    filename_column : str
+        Name of the column containing the filenames.
+    target_column : str
+        Name of the column containing the labels.
+    img_size : tuple
+        Size of the images.
+    batch_size : int (default: 16)
+        Size of the batches.
+    color_mode : str
+        Whether the images are grayscale or not. The default is True. Can be "grayscale" or "rgb".
+    """
+
+    labels_df = pd.read_csv(
+        labels_path, sep="\t", engine="python", header=0, dtype="str"
+    )
+    image_generator = ImageDataGenerator(rescale=1.0 / 255.0)
     batches = image_generator.flow_from_dataframe(
         dataframe=labels_df,
         directory=data_dir,
@@ -640,92 +774,6 @@ def data_preparation(data_dir, labels_path, filename_column, target_column, img_
         batch_size=batch_size,
         seed=42,
         shuffle=False,
-        class_mode='categorical',
+        class_mode="categorical",
     )
     return batches
-
-
-# # Feature extraction for training data
-# def extract_features_labels_train():
-#     """
-#     This funtion extracts the landmarks features for all images in the folder 'dataset/celeba'.
-#     It also extracts the gender label for each image.
-#     :return:
-#         landmark_features:  an array containing 68 landmark points for each image in which a face was detected
-#         gender_labels:      an array containing the gender label (male=0 and female=1) for each image in
-#                             which a face was detected
-#     """
-#     image_paths = [
-#         os.path.join(img_train_dir_b, l) for l in os.listdir(img_train_dir_b)
-#     ]
-#     target_size = None
-#     # Convert CSV into dataframe (tab seperators and header column defined)
-#     labels_file = pd.read_csv(
-#         os.path.join(basedir, labels_train_dir), sep="\t", engine="python", header=0
-#     )
-#     # Extract gender labels from df
-#     smiling_labels_df = labels_file["smiling"]
-#     smiling_labels = smiling_labels_df.values
-#     if os.path.isdir(img_train_dir_b):
-#         all_features = []
-#         all_labels = []
-
-#         for img_path in image_paths:
-#             file_name = img_path.split(".")[-2].split("/")[-1]
-#             # load image
-#             img = image.img_to_array(
-#                 image.load_img(
-#                     img_path, target_size=target_size, interpolation="bicubic"
-#                 )
-#             )
-#             features, _ = run_dlib_shape(img)
-#             if features is not None:
-#                 all_features.append(features)
-#                 all_labels.append(smiling_labels[int(file_name)])
-
-#     landmark_features = np.array(all_features)
-#     smiling_labels = (
-#         np.array(all_labels) + 1
-#     ) / 2  # simply converts the -1 into 0, so male=0 and female=1
-#     return landmark_features, smiling_labels
-
-
-# # Feature extracion for testing data
-# def extract_features_labels_test():
-#     """
-#     This funtion extracts the landmarks features for all images in the folder 'dataset/celeba'.
-#     It also extracts the gender label for each image.
-#     :return:
-#         landmark_features:  an array containing 68 landmark points for each image in which a face was detected
-#         gender_labels:      an array containing the gender label (male=0 and female=1) for each image in
-#                             which a face was detected
-#     """
-#     image_paths = [os.path.join(img_test_dir_b, l) for l in os.listdir(img_test_dir_b)]
-#     target_size = None
-#     # Convert CSV into dataframe (tab seperators and header column defined)
-#     labels_file = pd.read_csv(labels_test_dir, sep="\t", engine="python", header=0)
-#     # Extract gender labels from df
-#     smiling_labels_df = labels_file["smiling"]
-#     smiling_labels = smiling_labels_df.values
-#     if os.path.isdir(img_test_dir):
-#         all_features = []
-#         all_labels = []
-
-#         for img_path in image_paths:
-#             file_name = img_path.split(".")[-2].split("/")[-1]
-#             # load image
-#             img = image.img_to_array(
-#                 image.load_img(
-#                     img_path, target_size=target_size, interpolation="bicubic"
-#                 )
-#             )
-#             features, _ = run_dlib_shape(img)
-#             if features is not None:
-#                 all_features.append(features)
-#                 all_labels.append(smiling_labels[int(file_name)])
-
-#     landmark_features = np.array(all_features)
-#     smiling_labels = (
-#         np.array(all_labels) + 1
-#     ) / 2  # simply converts the -1 into 0, so male=0 and female=1
-#     return landmark_features, smiling_labels
