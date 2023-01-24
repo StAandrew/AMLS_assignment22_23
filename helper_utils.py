@@ -38,20 +38,21 @@ a2_figure_confusion_matrix_path = os.path.join(root_dir, "A2", 'a2_confusion_mat
 a2_figure_c_performance_path = os.path.join(root_dir, "A2", 'a2_c_performance.png')
 a2_figure_gamma_performance_path = os.path.join(root_dir, "A2", 'a2_gamma_performance.png')
 
-# Specify cartoon directories
-cartoon_train_img_dir = os.path.join(datasets_dir, "cartoon_set", "img")
-cartoon_train_label_dir = os.path.join(datasets_dir, "cartoon_set", "labels.csv")
+# Specify default cartoon directories
+cartoon_img_dir = os.path.join(datasets_dir, "cartoon_set", "img")
+cartoon_label_dir = os.path.join(datasets_dir, "cartoon_set", "labels.csv")
 cartoon_test_img_dir = os.path.join(datasets_dir, "cartoon_set_test", "img")
 cartoon_test_label_dir = os.path.join(datasets_dir, "cartoon_set_test", "labels.csv")
 
-# cartoon_features_dir = os.path.join(datasets_dir, "cartoon_set_no_glasses")
-cartoon_train_features_dir = os.path.join(datasets_dir, "cartoon_set", "features.npz")
-cartoon_test_features_dir = os.path.join(datasets_dir, "cartoon_set_test", "features.npz")
-
+cartoon_features_dir = os.path.join(datasets_dir, "cartoon_set", "features.npz")
 cartoon_resized_images_path = os.path.join(datasets_dir, "cartoon_set", "resized_img")
-cartoon_test_resized_images_path = os.path.join(datasets_dir, "cartoon_set_test", "resized_img")
 cartoon_resized_gray_images_path = os.path.join(datasets_dir, "cartoon_set", "resized_gray_img")
+cartoon_eyes_dir = os.path.join(datasets_dir, "cartoon_set", "eyes")
+
+cartoon_test_features_dir = os.path.join(datasets_dir, "cartoon_set_test", "features.npz")
+cartoon_test_resized_images_path = os.path.join(datasets_dir, "cartoon_set_test", "resized_img")
 cartoon_test_resized_gray_images_path = os.path.join(datasets_dir, "cartoon_set_test", "resized_gray_img")
+cartoon_test_eyes_dir = os.path.join(datasets_dir, "cartoon_set_test", "eyes")
 
 b1_model_path = os.path.join(root_dir, "B1", 'B1_weights.h5')
 b2_model_path = os.path.join(root_dir, "B2", 'B2_weights.h5')
@@ -103,6 +104,8 @@ def initial_config(warnings_off=True, cpu_only_training=False):
         paths.append(cartoon_test_resized_images_path)
         paths.append(cartoon_resized_gray_images_path)
         paths.append(cartoon_test_resized_gray_images_path)
+        paths.append(cartoon_eyes_dir)
+        paths.append(cartoon_test_eyes_dir)
         
         for path in paths:
             if not os.path.exists(path):

@@ -11,8 +11,8 @@ from B1.b1 import B1
 logger = initial_config()
 run_a1 = False
 run_a2 = False
-run_b1 = True
-run_b2 = False
+run_b1 = False
+run_b2 = True
 
 if run_a1 or run_a2:
     logger.info("Loading CelebA dataset features...")
@@ -92,9 +92,9 @@ if run_a2:
 
 
 if run_b1:
-    img_size = (250, 250)
+    img_size = (300, 300)
     validation_size = 0.2
-    batch_size = 8  # reduce if not enough GPU vRAM available
+    batch_size = 1000  # reduce if not enough GPU vRAM available
     epochs = 10
     filename_column = "file_name"
     label_name = "face_shape"
@@ -144,35 +144,37 @@ if run_b1:
 
 
 if run_b2:
+    filename_column = "file_name"
+    label_name = "eye_color"
+    eye_rectangle = (248, 275, 190, 310)
+    black_rectangle = (245, 280, 225, 275)
+    img_size = (eye_rectangle[1]-eye_rectangle[0], eye_rectangle[3]-eye_rectangle[2])
+
     logger.info("Loading resized Cartoon dataset images...")
-    cartoon_images, cartoon_labels_df = load_datasets(cartoon_resized_images_path, cartoon_train_label_dir, "file_name", "eye_color", "face_shape", grayscale=False)
-    if cartoon_images is None:
-        logger.info("Cartoon resized images not found. Loading raw data...")
-        images, cartoon_labels_df = load_datasets(cartoon_train_img_dir, cartoon_train_label_dir, "file_name", "eye_color", "face_shape", grayscale=False)
-        logger.info("Resizing RGB images...")
-        cartoon_images = crop_resize_images_func(images, grayscale=False)
-        logger.debug("loaded images: {}".format(cartoon_images.shape))
-        logger.info("Saving RGB images...")
-        save_resized_images(cartoon_images, cartoon_resized_images_path, grayscale=False)
+    if check_if_dataset_present(cartoon_eyes_dir, cartoon_label_dir, filename_column):
+        print("True")
+    else:
+        logger.info("Cartoon eye images not found. Loading raw data...")
+        images, cartoon_labels_df = load_datasets(cartoon_img_dir, cartoon_label_dir, filename_column, "eye_color", "face_shape", grayscale=False)
+        logger.info("Resizing and removing images with glasses...")
+        cartoon_eye_images = extract_eye_rectangle_remove_glasses(logger, images, eye_rectangle, black_rectangle, grayscale=False)
+        logger.info("Saving cartoon eye images...")
+        save_resized_images(cartoon_eye_images, cartoon_eyes_dir, grayscale=False)
         del images
     
     logger.info("Loading resized Cartoon test dataset images...")
-    cartoon_test_images, cartoon_test_labels_df = load_datasets(cartoon_test_resized_images_path, cartoon_test_label_dir, "file_name", "eye_color", "face_shape", grayscale=False)
-    if cartoon_test_images is None:
+    if check_if_dataset_present(cartoon_test_eyes_dir, cartoon_test_label_dir, filename_column):
+        print("True2")
+    else:
         logger.info("Cartoon test resized images not found. Loading raw data...")
-        images, cartoon_test_labels_df = load_datasets(cartoon_test_img_dir, cartoon_test_label_dir, "file_name", "eye_color", "face_shape", grayscale=False)
-        logger.info("Resizing RGB test images...")
-        cartoon_test_images = crop_resize_images_func(images, grayscale=False)
-        logger.info("Saving RGB test images...")
-        save_resized_images(cartoon_test_images, cartoon_test_resized_images_path, grayscale=False)
-        del images
+        images, cartoon_test_labels_df = load_datasets(cartoon_test_img_dir, cartoon_test_label_dir, filename_column, "eye_color", "face_shape", grayscale=False)
+        logger.info("Resizing and removing images with glasses...")
+        cartoon_test_eye_images = extract_eye_rectangle_remove_glasses(logger, images, eye_rectangle, black_rectangle, grayscale=False)
+        logger.info("Saving cartoon test eye images...")
+        save_resized_images(cartoon_test_eye_images, cartoon_test_eyes_dir, grayscale=False)
+        # del images
 
-    # B2
-    # Prepare RGB pirctures for B2
-    cartoon_images, _ = load_datasets(cartoon_train_img_dir, cartoon_train_label_dir, "file_name", "eye_color", "face_shape", grayscale=False)
 
-    # labels, images = load_datasets(cartoon_train_img_dir, cartoon_train_label_dir, "eye_color", "file_name", grayscale=False)
-    # test_labels, test_images = load_datasets(cartoon_test_img_dir, cartoon_test_label_dir, "eye_color", "file_name", grayscale=False)
 
 logger.info("Finished.")
 

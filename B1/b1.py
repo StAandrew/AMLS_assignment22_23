@@ -17,12 +17,6 @@ num_classes = 5  # total classes (0-9 digits).
 
 # Training parameters.
 learning_rate = 0.001
-training_steps = 78
-batch_size = 128
-display_step = 10
-epochs = 10
-num_samples = 100  # -1 for all available samples
-validation_split = 0.2
 
 # Network parameters.
 conv1_filters = 32  # number of filters for 1st conv layer.

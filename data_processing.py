@@ -223,9 +223,9 @@ def crop_resize_images_func(new_size, images, grayscale=True):
 
     # cretate a new array for the resized images
     if grayscale:
-        resized_images = np.zeros((len(images), new_h, new_w, 4), dtype=np.uint16)
+        resized_images = np.zeros((len(images), new_h, new_w, len(images[0, 0, 0, :])), dtype=np.uint16)
     else:
-        resized_images = np.zeros((len(images), new_h, new_w, 3, 4), dtype=np.uint16)
+        resized_images = np.zeros((len(images), new_h, new_w, 3, len(images[0, 0, 0, 0, :])), dtype=np.uint16)
 
     # resize images
     for i in range(len(images)):
@@ -249,25 +249,48 @@ def crop_resize_images_func(new_size, images, grayscale=True):
     return resized_images
 
 
-def extract_eye_rectangle(images, eye_rect, black_rect, grayscale=True):
-    eye_rect = (248, 275, 190, 310)
-    black_rect = (245, 280, 225, 275)
+def extract_eye_rectangle_remove_glasses(logger, images, eye_rect, black_rect, grayscale=True):
+    if grayscale:
+        logger.error("Cannot run this extract eye rectabgle function on grayscale images. Please set grayscale=False.")
+        exit()
 
-    # for i in range(len(images)):
-    for i in range(10):
-        if grayscale:
-            image = images[i, :, :, 0]
-            image = image.astype(np.uint8)
+    eye_rect = (248, 275, 190, 225)
+    # black_rect = (245, 280, 225, 275)
+    eye_array = np.zeros((len(images), eye_rect[1]-eye_rect[0], eye_rect[3]-eye_rect[2], 3, len(images[0, 0, 0, 0, :])), dtype=np.uint16)
+
+    new_i = 0
+    for i in range(len(images)):
+        image = images[i, :, :, :, 0]
+        image = image.astype(np.uint8)
+        eye_img = image.copy()
+        eye_img = eye_img[eye_rect[0]:eye_rect[1], eye_rect[2]:eye_rect[3]]
+        avg = np.mean(eye_img)
+        if avg > 60:
+            for j in range(len(images[0, 0, 0, 0, :])):
+                eye_array[new_i, 0, 0, 0, j] = images[i, 0, 0, 0, j]
+            eye_array[new_i, :, :, :, 0] = eye_img
+            new_i += 1
+    eye_array = eye_array[:new_i, :, :, :, :]
+    return eye_array
+
+
+def check_if_dataset_present(dataset_img_path, dataset_labels_path, filename_column_name):
+    try:
+        if os.path.exists(dataset_img_path) and os.path.exists(dataset_labels_path):
+            img_dir = os.listdir(dataset_img_path)
+            dataset_labels = pd.read_csv(dataset_labels_path, skipinitialspace=True, sep="\t").drop(['Unnamed: 0'],axis=1)
+            if len(os.listdir(dataset_img_path)) == 0:
+                return False
+            if filename_column_name in dataset_labels.columns:
+                return True
+            else:
+                return False
         else:
-            bgr_image = images[i, :, :, :, 0]
-            bgr_image = bgr_image.astype(np.uint8)
-            image  = bgr_image
-        tmp_image = image.copy()
-        tmp_image[black_rect[0]:black_rect[1], black_rect[2]:black_rect[3]] = 0
-        tmp_image = tmp_image[eye_rect[0]:eye_rect[1], eye_rect[2]:eye_rect[3]]
-        resized_image = cv2.resize(cropped_image, new_size)
-        cv2.imwrite(f"{os.path.join(cartoon_resized_images_path, str(i))}.png", tmp_image)
-    exit()
+            return False
+    except Exception as e:
+        print(e)
+        return False
+
 
 
 def save_resized_images(resized_images, resized_images_path, grayscale=True):
