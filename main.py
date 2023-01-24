@@ -93,6 +93,12 @@ if run_a2:
 
 if run_b1:
     img_size = (250, 250)
+    validation_size = 0.2
+    batch_size = 8  # reduce if not enough GPU vRAM available
+    epochs = 10
+    filename_column = "file_name"
+    label_name = "face_shape"
+
     logger.info("Loading resized gray Cartoon dataset images...")
     cartoon_gray_images, cartoon_labels_df = load_datasets(cartoon_resized_gray_images_path, cartoon_train_label_dir, "file_name", "eye_color", "face_shape")
     if cartoon_gray_images is None:
@@ -114,55 +120,27 @@ if run_b1:
         logger.info("Saving gray test images...")
         save_resized_images(cartoon_test_gray_images, cartoon_test_resized_gray_images_path)
         del gray_images
-
-    # B1
-    validation_size = 0.2
-    batch_size = 8  # reduce if not enough GPU vRAM available
-    epochs = 10
-
-    label_name = "face_shape"
-    cartoon_data_train, cartoon_data_verify, cartoon_label_train, cartoon_label_verify = shuffle_split(cartoon_gray_images, cartoon_labels_df, "file_name", "eye_color", "face_shape", label_name, validation_size, logger)
-    cartoon_data_test, _, cartoon_label_test, _ = shuffle_split(cartoon_test_gray_images, cartoon_test_labels_df, "file_name", "eye_color", "face_shape", label_name, 0, logger)
+    
     del cartoon_gray_images, cartoon_test_gray_images, cartoon_labels_df, cartoon_test_labels_df
 
-    img_rows=cartoon_data_train[0].shape[0]
-    img_cols=cartoon_data_train[0].shape[1]
-    input_shape = (img_rows, img_cols, 1)
 
-    logger.debug(cartoon_data_train.shape)
-    logger.debug(cartoon_data_verify.shape)
-    logger.debug(cartoon_data_test.shape)
+    cartoon_train_batches, cartoon_validation_batches = data_split_preparation(cartoon_resized_gray_images_path, cartoon_train_label_dir, filename_column, label_name, img_size, validation_size, batch_size)
+    cartoon_test_batches = data_preparation(cartoon_test_resized_gray_images_path, cartoon_test_label_dir, filename_column, label_name, img_size, batch_size)
 
-    cartoon_data_train = cartoon_data_train.reshape(cartoon_data_train.shape[0], img_rows, img_cols, 1)
-    cartoon_data_verify = cartoon_data_verify.reshape(cartoon_data_verify.shape[0], img_rows, img_cols, 1)
-    cartoon_data_test = cartoon_data_test.reshape(cartoon_data_test.shape[0], img_rows, img_cols, 1)
+    # early_stop_callback = EarlyStopping(
+    #     monitor="val_loss", restore_best_weights=True, patience=5, verbose=1
+    # )
 
-    logger.debug(cartoon_data_train.shape)
-    logger.debug(cartoon_data_verify.shape)
-    logger.debug(cartoon_data_test.shape)
-    exit()
-
-
-
-    dataset_train = tf.data.Dataset.from_tensor_slices((cartoon_data_train, cartoon_label_train))
-    dataset_valuation = tf.data.Dataset.from_tensor_slices((cartoon_data_verify, cartoon_label_verify))
-    dataset_test = tf.data.Dataset.from_tensor_slices((cartoon_data_test, cartoon_label_test))
-
-    training_batches = dataset_train.shuffle(buffer_size=1000).batch(batch_size).prefetch(1)
-    validation_batches = dataset_valuation.shuffle(buffer_size=1000).batch(batch_size).prefetch(1)
-    test_batches = dataset_test.shuffle(buffer_size=1000).batch(batch_size).prefetch(1)
-
-    early_stop_callback = EarlyStopping(
-        monitor="val_loss", restore_best_weights=True, patience=5, verbose=1
-    )
-
+    input_shape = cartoon_train_batches.image_shape
+    logger.debug(f"input shape: {input_shape}")
     model = B1(input_shape)
     acc_B1_train, acc_B1_valid = model.train(
-        training_batches, validation_batches, epochs=epochs, verbose=2, plot=True, callbacks=[early_stop_callback]
+        cartoon_train_batches, cartoon_validation_batches, epochs=epochs, verbose=2, plot=True
     )
+    logger.info(f"Training accuracy: {str(acc_B1_train)}")
     # model.model.save_weights(b1_model_path)
-    acc_B1_test = model.test(logger, test_batches, verbose=2, confusion_mesh=True)
-    logger.info("model tested, accuracy: ", str(acc_B1_test))
+    acc_B1_test = model.test(logger, cartoon_test_batches, verbose=2, confusion_mesh=True)
+    logger.info(f"model tested, accuracy: {str(acc_B1_test)}")
 
 
 if run_b2:

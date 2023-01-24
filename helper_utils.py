@@ -86,7 +86,7 @@ def initial_config(warnings_off=True, cpu_only_training=False):
     if len(gpus) > 0:
         for gpu in gpus:
             try:
-                tf.config.experimental.set_memory_growth(gpu, True)
+                tf.config.experimental.set_memory_growth(gpu, False)
             except RuntimeError as e:
                 logger.error(e)
     elif cpu_only_training:

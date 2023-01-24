@@ -6,6 +6,7 @@ import os
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 
 # how to find frontal human faces in an image using 68 landmarks.  These are points on the face such as the corners of the mouth, along the eyebrows, on the eyes, and so forth.
@@ -403,6 +404,56 @@ def batches_to_arrays(batches):
     images = np.array(list(x for x, y in batches))
     labels = np.array(list(y for x, y in batches))
     return images, labels
+
+
+def data_split_preparation(data_dir, labels_path, filename_column, target_column, img_size, validation_size, batch_size=16, color_mode="grayscale"):
+    labels_df = pd.read_csv(labels_path, sep="\t", engine="python", header=0, dtype='str')
+    image_generator = ImageDataGenerator(rescale=1. / 255., validation_split=validation_size)
+    training_batches = image_generator.flow_from_dataframe(
+        subset="training", 
+        dataframe=labels_df, 
+        directory=data_dir,
+        x_col=filename_column, 
+        y_col=target_column,
+        color_mode=color_mode, 
+        target_size=img_size,
+        batch_size=batch_size, 
+        seed=42,
+        shuffle=True, 
+        class_mode='categorical',
+    )
+    validation_batches = image_generator.flow_from_dataframe(
+        subset="validation",
+        dataframe=labels_df, 
+        directory=data_dir,
+        x_col=filename_column, 
+        y_col=target_column, 
+        color_mode=color_mode, 
+        target_size=img_size,
+        batch_size=batch_size, 
+        seed=42, 
+        shuffle=True,
+        class_mode='categorical',
+    )
+    return training_batches, validation_batches
+
+
+def data_preparation(data_dir, labels_path, filename_column, target_column, img_size, batch_size=16, color_mode="grayscale"):
+    labels_df = pd.read_csv(labels_path, sep="\t", engine="python", header=0, dtype='str')
+    image_generator = ImageDataGenerator(rescale=1. / 255.)
+    batches = image_generator.flow_from_dataframe(
+        dataframe=labels_df,
+        directory=data_dir,
+        x_col=filename_column,
+        y_col=target_column,
+        color_mode=color_mode,
+        target_size=img_size,
+        batch_size=batch_size,
+        seed=42,
+        shuffle=False,
+        class_mode='categorical',
+    )
+    return batches
 
 
 # Feature extraction for training data

@@ -37,17 +37,22 @@ class B1:
         self.model = Sequential(
             [
                 # Convolution Layer with 32 filters and a kernel size of 5.
-                Conv2D(32, kernel_size=(5, 5), activation="relu", input_shape=input_shape),
+                # Conv2D(32, kernel_size=(5, 5), activation="relu", input_shape=input_shape),
+                Conv2D(filters=16, kernel_size=(3, 3), activation="relu", input_shape=input_shape, padding="same"),
                 # Max Pooling (down-sampling) with kernel size of 2 and strides of 2.
-                MaxPooling2D(pool_size=(1, 1)),
+                MaxPooling2D(pool_size=(2, 2), strides=2),
                 # Convolution Layer with 64 filters and a kernel size of 3.
-                Conv2D(64, kernel_size=(3, 3), activation="relu"),
+                Conv2D(filters=32, kernel_size=(3, 3), activation="relu", padding="same"),
                 # Max Pooling (down-sampling) with kernel size of 2 and strides of 2.
-                MaxPooling2D(pool_size=(1, 1)),
+                MaxPooling2D(pool_size=(2, 2), strides=2),
+                # Convolution Layer with 64 filters and a kernel size of 3.
+                Conv2D(filters=64, kernel_size=(3, 3), activation="relu", padding="same"),
+                # Max Pooling (down-sampling) with kernel size of 2 and strides of 2.
+                MaxPooling2D(pool_size=(2, 2), strides=2),
                 # Flatten the data to a 1-D vector for the fully connected layer.
                 Flatten(),
                 # Fully connected layer.
-                Dense(1024, activation="relu"),
+                # Dense(1024, activation="relu"),
                 # Apply Dropout.
                 Dropout(0.5),
                 # Output layer, class prediction.
@@ -64,13 +69,12 @@ class B1:
         adam.iterations
         adam.decay = tf.Variable(0.0)
         self.model.compile(
-            optimizer=adam, loss="sparse_categorical_crossentropy", metrics=["accuracy"]
+            optimizer=adam, loss="categorical_crossentropy", metrics=["accuracy"]
         )
 
     def train(
-        self, training_batches, validation_batches, epochs=15, verbose=1, plot=True, callbacks=None
+        self, training_batches, validation_batches, epochs=15, verbose=1, plot=True
     ):
-        self.model.callbacks = callbacks
         history = self.model.fit(
             training_batches,
             steps_per_epoch=len(training_batches),
@@ -96,9 +100,8 @@ class B1:
             x=test_batches, steps=len(test_batches), verbose=verbose
         )
         predictions = np.round(predictions)
-        predicted_labels = [np.argmax(label) for label in predictions]
-        predicted_labels = np.array(predicted_labels)
-        true_labels = np.array(np.concatenate([y for x, y in test_batches], axis=0))
+        predicted_labels = np.array(np.argmax(predictions, axis=-1))
+        true_labels = np.array(test_batches.classes)
         if confusion_mesh:
             plot_confusion_matrix(logger, class_labels, predicted_labels, true_labels)
         return accuracy_score(true_labels, predicted_labels)
