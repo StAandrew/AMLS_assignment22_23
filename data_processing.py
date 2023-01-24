@@ -138,9 +138,9 @@ def load_datasets(dataset_img_path, dataset_labels_path, filename_column_name, f
     
 
 def save_dataset(feature_arr, dataset_feature_arr_path):
-    """ This function saves the labels and features to disk. 
-    :param labels_df:                   dataframe containing the labels
-    :param dataset_feature_arr_path:    path to the array containing the features
+    """ This function saves the features to disk. 
+    :param feature_arr:             array containing the features
+    :param dataset_feature_arr_path: path to the array containing the features
     """
     np.savez(dataset_feature_arr_path, feature_arr)
 
@@ -249,7 +249,7 @@ def crop_resize_images_func(new_size, images, grayscale=True):
     return resized_images
 
 
-def extract_eye_rectangle_remove_glasses(logger, images, eye_rect, black_rect, grayscale=True):
+def extract_eye_rectangle_remove_glasses(logger, images, labels_df, eye_rect, black_rect, grayscale=True):
     if grayscale:
         logger.error("Cannot run this extract eye rectabgle function on grayscale images. Please set grayscale=False.")
         exit()
@@ -257,6 +257,7 @@ def extract_eye_rectangle_remove_glasses(logger, images, eye_rect, black_rect, g
     eye_rect = (248, 275, 190, 225)
     # black_rect = (245, 280, 225, 275)
     eye_array = np.zeros((len(images), eye_rect[1]-eye_rect[0], eye_rect[3]-eye_rect[2], 3, len(images[0, 0, 0, 0, :])), dtype=np.uint16)
+    new_labels_numbers = []
 
     new_i = 0
     for i in range(len(images)):
@@ -269,9 +270,11 @@ def extract_eye_rectangle_remove_glasses(logger, images, eye_rect, black_rect, g
             for j in range(len(images[0, 0, 0, 0, :])):
                 eye_array[new_i, 0, 0, 0, j] = images[i, 0, 0, 0, j]
             eye_array[new_i, :, :, :, 0] = eye_img
+            new_labels_numbers.append(i)
             new_i += 1
+    new_labels_df = labels_df.iloc[new_labels_numbers, :].reset_index(drop=True)
     eye_array = eye_array[:new_i, :, :, :, :]
-    return eye_array
+    return eye_array, new_labels_df
 
 
 def check_if_dataset_present(dataset_img_path, dataset_labels_path, filename_column_name):
@@ -292,7 +295,6 @@ def check_if_dataset_present(dataset_img_path, dataset_labels_path, filename_col
         return False
 
 
-
 def save_resized_images(resized_images, resized_images_path, grayscale=True):
     for i in range(len(resized_images)):
         if grayscale:
@@ -308,6 +310,14 @@ def save_resized_images(resized_images, resized_images_path, grayscale=True):
         if not cv2.imwrite(img_path, img):
             raise Exception("Could not write image")
             exit(1)
+
+
+def save_dataframe(logger, dataframe, dataframe_path):
+    try:
+        dataframe.to_csv(dataframe_path, sep="\t")
+    except Exception as e:
+        logger.error(f"Error trying to save dataframe: {e}")
+        exit(1)
 
 
 def extract_jawline_features(feature_arr):

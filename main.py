@@ -17,18 +17,18 @@ run_b2 = True
 if run_a1 or run_a2:
     logger.info("Loading CelebA dataset features...")
     # Prepare training and verification data for A1 & A2
-    celeba_features, labels_df = load_features(celeba_features_train_dir, celeba_train_label_dir)
-    if celeba_features is None or labels_df is None:
+    celeba_features, label_df = load_features(celeba_features_train_dir, celeba_train_label_path)
+    if celeba_features is None or label_df is None:
         logger.info("Celeba features not found, loading raw data and extracting features...")
-        images, labels_df = load_datasets(celeba_train_img_dir, celeba_train_label_dir, "img_name", "gender", "smiling")
+        images, label_df = load_datasets(celeba_train_img_dir, celeba_train_label_path, "img_name", "gender", "smiling")
         celeba_features = extract_face_features(images)
         save_dataset(celeba_features, celeba_features_train_dir)
 
     logger.info("Loading CelebA test dataset features...")
-    celeba_features_test, labels_df_test = load_features(celeba_features_test_dir, celeba_test_label_dir)
-    if celeba_features_test is None or labels_df_test is None:
+    celeba_features_test, label_df_test = load_features(celeba_features_test_dir, celeba_test_label_path)
+    if celeba_features_test is None or label_df_test is None:
         logger.info("Celeba test features not found, loading raw data and extracting features...")
-        images, labels_df_test = load_datasets(celeba_test_img_dir, celeba_test_label_dir, "img_name", "gender", "smiling")
+        images, label_df_test = load_datasets(celeba_test_img_dir, celeba_test_label_path, "img_name", "gender", "smiling")
         celeba_features_test = extract_face_features(images)
         save_dataset(celeba_features_test, celeba_features_test_dir)
 
@@ -40,11 +40,11 @@ if run_a1:
     label_name = "gender"
 
     jawline_arr = extract_jawline_features(celeba_features)
-    jawline_data_train, _, jawline_label_train, _ = shuffle_split(jawline_arr, labels_df, "img_name", "gender", "smiling", label_name, test_size, logger)
+    jawline_data_train, _, jawline_label_train, _ = shuffle_split(jawline_arr, label_df, "img_name", "gender", "smiling", label_name, test_size, logger)
     jawline_data_train = data_reshape(jawline_data_train)
 
     jawline_arr_test = extract_jawline_features(celeba_features_test)
-    jawline_data_test, _, jawline_label_test, _ = shuffle_split(jawline_arr_test, labels_df_test, "img_name", "gender", "smiling", label_name, 0, logger)
+    jawline_data_test, _, jawline_label_test, _ = shuffle_split(jawline_arr_test, label_df_test, "img_name", "gender", "smiling", label_name, 0, logger)
     jawline_data_test = data_reshape(jawline_data_test)
 
     model = svm.SVC()
@@ -69,11 +69,11 @@ if run_a2:
     label_name = "smiling"
 
     smile_arr = extract_smile_features(celeba_features)
-    smile_data_train, _, smile_label_train, _ = shuffle_split(smile_arr, labels_df, "img_name", "gender", "smiling", label_name, test_size, logger)
+    smile_data_train, _, smile_label_train, _ = shuffle_split(smile_arr, label_df, "img_name", "gender", "smiling", label_name, test_size, logger)
     smile_data_train = data_reshape(smile_data_train)
 
     smile_arr_test = extract_smile_features(celeba_features_test)
-    smile_data_test, _, smile_label_test, _ = shuffle_split(smile_arr_test, labels_df_test, "img_name", "gender", "smiling", label_name, 0, logger)
+    smile_data_test, _, smile_label_test, _ = shuffle_split(smile_arr_test, label_df_test, "img_name", "gender", "smiling", label_name, 0, logger)
     smile_data_test = data_reshape(smile_data_test)
 
     model = svm.SVC()
@@ -100,10 +100,10 @@ if run_b1:
     epochs = 10
 
     logger.info("Loading resized gray Cartoon dataset images...")
-    cartoon_gray_images, cartoon_labels_df = load_datasets(cartoon_resized_gray_images_path, cartoon_train_label_dir, "file_name", "eye_color", "face_shape")
+    cartoon_gray_images, cartoon_label_df = load_datasets(cartoon_resized_gray_images_path, cartoon_train_label_path, "file_name", "eye_color", "face_shape")
     if cartoon_gray_images is None:
         logger.info("Cartoon resized gray images not found. Loading raw images...")
-        gray_images, _ = load_datasets(cartoon_train_img_dir, cartoon_train_label_dir, "file_name", "eye_color", "face_shape")
+        gray_images, _ = load_datasets(cartoon_train_img_dir, cartoon_train_label_path, "file_name", "eye_color", "face_shape")
         logger.info("Resizing gray images...")
         cartoon_gray_images = crop_resize_images_func(img_size, gray_images)
         logger.info("Saving gray images...")
@@ -111,21 +111,21 @@ if run_b1:
         del gray_images
 
     logger.info("Loading resized gray Cartoon test dataset images...")
-    cartoon_test_gray_images, cartoon_test_labels_df = load_datasets(cartoon_test_resized_gray_images_path, cartoon_test_label_dir, "file_name", "eye_color", "face_shape")
+    cartoon_test_gray_images, cartoon_test_label_df = load_datasets(cartoon_test_resized_gray_images_path, cartoon_test_label_path, "file_name", "eye_color", "face_shape")
     if cartoon_test_gray_images is None:
         logger.info("Cartoon resized gray images not found. Loading gray test images...")
-        gray_images, _ = load_datasets(cartoon_test_img_dir, cartoon_test_label_dir, "file_name", "eye_color", "face_shape")
+        gray_images, _ = load_datasets(cartoon_test_img_dir, cartoon_test_label_path, "file_name", "eye_color", "face_shape")
         logger.info("Resizing gray test images...")
         cartoon_test_gray_images = crop_resize_images_func(img_size, gray_images)
         logger.info("Saving gray test images...")
         save_resized_images(cartoon_test_gray_images, cartoon_test_resized_gray_images_path)
         del gray_images
     
-    del cartoon_gray_images, cartoon_test_gray_images, cartoon_labels_df, cartoon_test_labels_df
+    del cartoon_gray_images, cartoon_test_gray_images, cartoon_label_df, cartoon_test_label_df
 
 
-    cartoon_train_batches, cartoon_validation_batches = data_split_preparation(cartoon_resized_gray_images_path, cartoon_train_label_dir, filename_column, label_name, img_size, validation_size, batch_size)
-    cartoon_test_batches = data_preparation(cartoon_test_resized_gray_images_path, cartoon_test_label_dir, filename_column, label_name, img_size, batch_size)
+    cartoon_train_batches, cartoon_validation_batches = data_split_preparation(cartoon_resized_gray_images_path, cartoon_train_label_path, filename_column, label_name, img_size, validation_size, batch_size)
+    cartoon_test_batches = data_preparation(cartoon_test_resized_gray_images_path, cartoon_test_label_path, filename_column, label_name, img_size, batch_size)
 
     # early_stop_callback = EarlyStopping(
     #     monitor="val_loss", restore_best_weights=True, patience=5, verbose=1
@@ -154,27 +154,29 @@ if run_b2:
     epochs = 10
 
     logger.info("Loading resized Cartoon dataset images...")
-    if not check_if_dataset_present(cartoon_eyes_dir, cartoon_label_dir, filename_column):
+    if not check_if_dataset_present(cartoon_eyes_dir, cartoon_eyes_label_path, filename_column):
         logger.info("Cartoon eye images not found. Loading raw data...")
-        images, cartoon_labels_df = load_datasets(cartoon_img_dir, cartoon_label_dir, filename_column, "eye_color", "face_shape", grayscale=False)
+        images, cartoon_label_df = load_datasets(cartoon_img_dir, cartoon_label_path, filename_column, "eye_color", "face_shape", grayscale=False)
         logger.info("Resizing and removing images with glasses...")
-        cartoon_eye_images = extract_eye_rectangle_remove_glasses(logger, images, eye_rectangle, black_rectangle, grayscale=False)
+        cartoon_eye_images, cartoon_eye_df = extract_eye_rectangle_remove_glasses(logger, images, cartoon_label_df, eye_rectangle, black_rectangle, grayscale=False)
         logger.info("Saving cartoon eye images...")
         save_resized_images(cartoon_eye_images, cartoon_eyes_dir, grayscale=False)
+        save_dataframe(logger, cartoon_eye_df, cartoon_eyes_label_path)
         del images
     
     logger.info("Loading resized Cartoon test dataset images...")
-    if not check_if_dataset_present(cartoon_test_eyes_dir, cartoon_test_label_dir, filename_column):
+    if not check_if_dataset_present(cartoon_test_eyes_dir, cartoon_test_eyes_label_path, filename_column):
         logger.info("Cartoon test resized images not found. Loading raw data...")
-        images, cartoon_test_labels_df = load_datasets(cartoon_test_img_dir, cartoon_test_label_dir, filename_column, "eye_color", "face_shape", grayscale=False)
+        images, cartoon_test_label_df = load_datasets(cartoon_test_img_dir, cartoon_test_label_path, filename_column, "eye_color", "face_shape", grayscale=False)
         logger.info("Resizing and removing images with glasses...")
-        cartoon_test_eye_images = extract_eye_rectangle_remove_glasses(logger, images, eye_rectangle, black_rectangle, grayscale=False)
+        cartoon_test_eye_images, cartoon_test_eye_df = extract_eye_rectangle_remove_glasses(logger, images, cartoon_test_label_df, eye_rectangle, black_rectangle, grayscale=False)
         logger.info("Saving cartoon test eye images...")
         save_resized_images(cartoon_test_eye_images, cartoon_test_eyes_dir, grayscale=False)
+        save_dataframe(logger, cartoon_test_eye_df, cartoon_test_eyes_label_path)
         del images
 
-    cartoon_train_batches, cartoon_validation_batches = data_split_preparation(cartoon_eyes_dir, cartoon_label_dir, filename_column, label_name, img_size, validation_size, batch_size)
-    cartoon_test_batches = data_preparation(cartoon_test_eyes_dir, cartoon_test_label_dir, filename_column, label_name, img_size, batch_size)
+    cartoon_train_batches, cartoon_validation_batches = data_split_preparation(cartoon_eyes_dir, cartoon_eyes_label_path, filename_column, label_name, img_size, validation_size, batch_size)
+    cartoon_test_batches = data_preparation(cartoon_test_eyes_dir, cartoon_test_eyes_label_path, filename_column, label_name, img_size, batch_size)
     
     input_shape = cartoon_train_batches.image_shape
     logger.debug(f"input shape: {input_shape}")
@@ -191,7 +193,7 @@ if run_b2:
 logger.info("Finished.")
 
 # logger.info("Loading Cartoon dataset features...")
-# cartoon_features, _ = load_features(cartoon_train_features_dir, cartoon_train_label_dir)
+# cartoon_features, _ = load_features(cartoon_train_features_dir, cartoon_train_label_path)
 # if cartoon_features is None:
 #     logger.info("Cartoon features not found. Extracting features...")
 #     cartoon_features = extract_face_features(cartoon_gray_images)
@@ -203,7 +205,7 @@ logger.info("Finished.")
 #     pass
 
 # logger.info("Loading Cartoon test dataset features...")
-# cartoon_test_features, _ = load_features(cartoon_test_features_dir, cartoon_test_label_dir)
+# cartoon_test_features, _ = load_features(cartoon_test_features_dir, cartoon_test_label_path)
 # if cartoon_test_features is None:
 #     logger.info("Cartoon features not found. Extracting test features...")
 #     cartoon_test_features = extract_face_features(cartoon_test_gray_images)

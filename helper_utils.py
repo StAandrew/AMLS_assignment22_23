@@ -16,9 +16,9 @@ datasets_dir = os.path.join(root_dir, "Datasets")
 
 # Specify celeba directories
 celeba_train_img_dir = os.path.join(datasets_dir, "celeba", "img")
-celeba_train_label_dir = os.path.join(datasets_dir, "celeba", "labels.csv")
+celeba_train_label_path = os.path.join(datasets_dir, "celeba", "labels.csv")
 celeba_test_img_dir = os.path.join(datasets_dir, "celeba_test", "img")
-celeba_test_label_dir = os.path.join(datasets_dir, "celeba_test", "labels.csv")
+celeba_test_label_path = os.path.join(datasets_dir, "celeba_test", "labels.csv")
 
 # Specify extra directories
 celeba_features_train_dir = os.path.join(datasets_dir, "celeba", "features.npz")
@@ -40,19 +40,21 @@ a2_figure_gamma_performance_path = os.path.join(root_dir, "A2", 'a2_gamma_perfor
 
 # Specify default cartoon directories
 cartoon_img_dir = os.path.join(datasets_dir, "cartoon_set", "img")
-cartoon_label_dir = os.path.join(datasets_dir, "cartoon_set", "labels.csv")
+cartoon_label_path = os.path.join(datasets_dir, "cartoon_set", "labels.csv")
 cartoon_test_img_dir = os.path.join(datasets_dir, "cartoon_set_test", "img")
-cartoon_test_label_dir = os.path.join(datasets_dir, "cartoon_set_test", "labels.csv")
+cartoon_test_label_path = os.path.join(datasets_dir, "cartoon_set_test", "labels.csv")
 
 cartoon_features_dir = os.path.join(datasets_dir, "cartoon_set", "features.npz")
 cartoon_resized_images_path = os.path.join(datasets_dir, "cartoon_set", "resized_img")
 cartoon_resized_gray_images_path = os.path.join(datasets_dir, "cartoon_set", "resized_gray_img")
 cartoon_eyes_dir = os.path.join(datasets_dir, "cartoon_set", "eyes")
+cartoon_eyes_label_path = os.path.join(datasets_dir, "cartoon_set", "eyes_labels.csv")
 
 cartoon_test_features_dir = os.path.join(datasets_dir, "cartoon_set_test", "features.npz")
 cartoon_test_resized_images_path = os.path.join(datasets_dir, "cartoon_set_test", "resized_img")
 cartoon_test_resized_gray_images_path = os.path.join(datasets_dir, "cartoon_set_test", "resized_gray_img")
 cartoon_test_eyes_dir = os.path.join(datasets_dir, "cartoon_set_test", "eyes")
+cartoon_test_eyes_label_path = os.path.join(datasets_dir, "cartoon_set_test", "eyes_labels.csv")
 
 b1_model_path = os.path.join(root_dir, "B1", 'B1_weights.h5')
 b2_model_path = os.path.join(root_dir, "B2", 'B2_weights.h5')
