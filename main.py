@@ -9,11 +9,10 @@ from B1.b1 import B1
 from B2.b2 import B2
 
 logger = initial_config()
-run_a1 = False
-run_a2 = False
-run_b1_images = True
-run_b1_features = False
-run_b2 = False
+run_a1 = True
+run_a2 = True
+run_b1 = True
+run_b2 = True
 
 if run_a1 or run_a2:
     logger.info("Loading CelebA dataset features...")
@@ -34,8 +33,8 @@ if run_a1 or run_a2:
         save_dataset(celeba_features_test, celeba_features_test_path)
 
 
+# A1 --------------------------------------------------------------------------------------------------------------
 if run_a1:
-    # A1
     logger.info("Running A1: Gender Classification")
     test_size = 0 # because grid search will be used
     label_name = "gender"
@@ -63,8 +62,8 @@ if run_a1:
     a1.plot_grid_gamma(a1_figure_gamma_performance_path)
 
 
+# A2 --------------------------------------------------------------------------------------------------------------
 if run_a2:
-    # A2
     logger.info("Running A2: Smile detection")
     test_size = 0 # because grid search will be used
     label_name = "smiling"
@@ -92,12 +91,13 @@ if run_a2:
     a2.plot_grid_gamma(a2_figure_gamma_performance_path)
 
 
-if run_b1_images:
+# B1 --------------------------------------------------------------------------------------------------------------
+if run_b1:
     filename_column = "file_name"
     label_name = "face_shape"
     jaw_rectangle = (260, 390, 155, 345)
-    black_rectangles = [(245, 280, 225, 275), (260, 310, 185, 315)]
-    # black_rectangles = []
+    remove_beards = False
+    mask_eyes_nose = True
     reference_colour_position = (320, 249)
     check_colour_position = (385, 278)
     img_size = (jaw_rectangle[1]-jaw_rectangle[0], jaw_rectangle[3]-jaw_rectangle[2])
@@ -105,12 +105,17 @@ if run_b1_images:
     batch_size = 16  # reduce if not enough GPU vRAM available
     epochs = 10
 
+    if mask_eyes_nose:
+        black_rectangles = [(245, 280, 225, 275), (260, 310, 185, 315)]
+    else:
+        black_rectangles = []
+
     logger.info("Loading resized Cartoon dataset images...")
     if not check_if_dataset_present(cartoon_jaws_dir, cartoon_jaws_label_path, filename_column):
         logger.info("Cartoon jaw images not found. Loading raw data...")
         images, cartoon_label_df = load_datasets(cartoon_img_dir, cartoon_label_path, filename_column, "eye_color", "face_shape")
         logger.info("Resizing and removing images with beards...")
-        cartoon_jaw_images, cartoon_jaw_df = extract_jaw_rectangle_remove_undetectable(logger, images, cartoon_label_df, jaw_rectangle, black_rectangles, reference_colour_position, check_colour_position)
+        cartoon_jaw_images, cartoon_jaw_df = extract_jaw_rectangle_remove_beards(logger, images, cartoon_label_df, jaw_rectangle, black_rectangles, reference_colour_position, check_colour_position, remove_beards)
         logger.info("Saving cartoon jaw images...")
         save_resized_images(cartoon_jaw_images, cartoon_jaws_dir)
         save_dataframe(logger, cartoon_jaw_df, cartoon_jaws_label_path)
@@ -121,7 +126,7 @@ if run_b1_images:
         logger.info("Cartoon test resized images not found. Loading raw data...")
         images, cartoon_test_label_df = load_datasets(cartoon_test_img_dir, cartoon_test_label_path, filename_column, "eye_color", "face_shape")
         logger.info("Resizing and removing images with beards...")
-        cartoon_test_jaw_images, cartoon_test_jaw_df = extract_jaw_rectangle_remove_undetectable(logger, images, cartoon_test_label_df, jaw_rectangle, black_rectangles, reference_colour_position, check_colour_position)
+        cartoon_test_jaw_images, cartoon_test_jaw_df = extract_jaw_rectangle_remove_beards(logger, images, cartoon_test_label_df, jaw_rectangle, black_rectangles, reference_colour_position, check_colour_position, remove_beards)
         logger.info("Saving cartoon test jaw images...")
         save_resized_images(cartoon_test_jaw_images, cartoon_test_jaws_dir)
         save_dataframe(logger, cartoon_test_jaw_df, cartoon_test_jaws_label_path)
@@ -145,88 +150,11 @@ if run_b1_images:
     acc_B1_test = model.test(logger, cartoon_test_batches, verbose=2, confusion_mesh=True)
     logger.info(f"model tested, accuracy: {str(acc_B1_test)}")
 
-
-if run_b1_features:
-    filename_column = "file_name"
-    label_name = "face_shape"
-    validation_size = 0.2
-    batch_size = 16  # reduce if not enough GPU vRAM available
-    epochs = 10
-
-    if check_if_dataset_present(cartoon_features_dir, cartoon_label_path, filename_column):
-        logger.info("Cartoon features found. Loading...")
-        cartoon_features, cartoon_label_df = load_datasets(cartoon_features_dir, cartoon_label_path, filename_column, label_name, label_name)
-    else:
-        logger.info("Cartoon features not found. Loading raw images...")
-        images, cartoon_label_df = load_datasets(cartoon_img_dir, cartoon_label_path, filename_column, "eye_color", "face_shape", grayscale=True)
-        logger.info("Extracting features...")
-        cartoon_features = extract_face_features(images)
-        logger.info("Saving features...")
-        save_dataset(cartoon_features, cartoon_features_dir)
-        del images
-        # del cartoon_features
-    
-    if check_if_dataset_present(cartoon_test_features_dir, cartoon_test_label_path, filename_column):
-        logger.info("Cartoon test features found. Loading...")
-        cartoon_test_features, cartoon_test_label_df = load_datasets(cartoon_test_features_dir, cartoon_test_label_path, filename_column, label_name, label_name)
-    else:
-        logger.info("Cartoon test features not found. Loading raw images...")
-        images, cartoon_test_label_df = load_datasets(cartoon_test_img_dir, cartoon_test_label_path, filename_column, "eye_color", "face_shape", grayscale=True)
-        logger.info("Extracting features...")
-        cartoon_test_features = extract_face_features(images)
-        logger.info("Saving features...")
-        save_dataset(cartoon_test_features, cartoon_test_features_dir)
-        del images
-        # del cartoon_test_features
-    
-    jawline_arr = extract_jawline_features(cartoon_features)
-    jawline_data_train, _, jawline_label_train, _ = shuffle_split(jawline_arr, cartoon_label_df, filename_column, "eye_color", "face_shape", label_name, validation_size, logger)
-    jawline_data_train = data_reshape(jawline_data_train)
-
-    jawline_arr_test = extract_jawline_features(cartoon_test_features)
-    jawline_data_test, _, jawline_label_test, _ = shuffle_split(jawline_arr_test, cartoon_test_label_df, filename_column, "eye_color", "face_shape", label_name, 0, logger)
-    jawline_data_test = data_reshape(jawline_data_test)
-    
-    model = svm.SVC()
-    b1 = A1(jawline_data_train, jawline_label_train, jawline_data_test, jawline_label_test, logger)
-    logger.info("Loading B1 SVM model...")
-    if not b1.load_model(b1_model_path):
-        logger.info("B1 model not found, training using grid search...")
-        b1.train_grid_fit(model)
-        b1.save_model(b1_model_path)
-    b1.evaluate_best_model()
-    b1.output_info()
-    b1.plot_learning(b1_figure_learning_path, b1_figure_learning_file_path)
-    b1.plot_confusion_matrix(b1_figure_confusion_matrix_path)
-    b1.plot_grid_c(b1_figure_c_performance_path)
-    b1.plot_grid_gamma(b1_figure_gamma_performance_path)
-
-    exit()
-
-    img_size = ()
-    cartoon_train_batches, cartoon_validation_batches = data_split_preparation(cartoon_features_dir, cartoon_label_path, filename_column, label_name, img_size, validation_size, batch_size)
-    cartoon_test_batches = data_preparation(cartoon_test_features_dir, cartoon_test_label_path, filename_column, label_name, img_size, batch_size)
-
-    # early_stop_callback = EarlyStopping(
-    #     monitor="val_loss", restore_best_weights=True, patience=5, verbose=1
-    # )
-
-    input_shape = cartoon_train_batches.image_shape
-    logger.debug(f"input shape: {input_shape}")
-    model = B1(input_shape)
-    acc_B1_train, acc_B1_valid = model.train(
-        cartoon_train_batches, cartoon_validation_batches, epochs=epochs, verbose=2, plot=True
-    )
-    logger.info(f"Training accuracy: {str(acc_B1_train)}")
-    # model.model.save_weights(b1_model_path)
-    acc_B1_test = model.test(logger, cartoon_test_batches, verbose=2, confusion_mesh=True)
-    logger.info(f"model tested, accuracy: {str(acc_B1_test)}")
     
 if run_b2:
     filename_column = "file_name"
     label_name = "eye_color"
     eye_rectangle = (248, 275, 190, 310)
-    black_rectangle = (245, 280, 225, 275)
     img_size = (eye_rectangle[1]-eye_rectangle[0], eye_rectangle[3]-eye_rectangle[2])
     validation_size = 0.2
     batch_size = 16  # reduce if not enough GPU vRAM available
@@ -237,7 +165,7 @@ if run_b2:
         logger.info("Cartoon eye images not found. Loading raw data...")
         images, cartoon_label_df = load_datasets(cartoon_img_dir, cartoon_label_path, filename_column, "eye_color", "face_shape", grayscale=False)
         logger.info("Resizing and removing images with glasses...")
-        cartoon_eye_images, cartoon_eye_df = extract_eye_rectangle_remove_glasses(logger, images, cartoon_label_df, eye_rectangle, black_rectangle, grayscale=False)
+        cartoon_eye_images, cartoon_eye_df = extract_eye_rectangle_remove_glasses(logger, images, cartoon_label_df, eye_rectangle, grayscale=False)
         logger.info("Saving cartoon eye images...")
         save_resized_images(cartoon_eye_images, cartoon_eyes_dir, grayscale=False)
         save_dataframe(logger, cartoon_eye_df, cartoon_eyes_label_path)
@@ -248,7 +176,7 @@ if run_b2:
         logger.info("Cartoon test resized images not found. Loading raw data...")
         images, cartoon_test_label_df = load_datasets(cartoon_test_img_dir, cartoon_test_label_path, filename_column, "eye_color", "face_shape", grayscale=False)
         logger.info("Resizing and removing images with glasses...")
-        cartoon_test_eye_images, cartoon_test_eye_df = extract_eye_rectangle_remove_glasses(logger, images, cartoon_test_label_df, eye_rectangle, black_rectangle, grayscale=False)
+        cartoon_test_eye_images, cartoon_test_eye_df = extract_eye_rectangle_remove_glasses(logger, images, cartoon_test_label_df, eye_rectangle, grayscale=False)
         logger.info("Saving cartoon test eye images...")
         save_resized_images(cartoon_test_eye_images, cartoon_test_eyes_dir, grayscale=False)
         save_dataframe(logger, cartoon_test_eye_df, cartoon_test_eyes_label_path)

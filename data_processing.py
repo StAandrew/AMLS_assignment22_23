@@ -162,9 +162,19 @@ def load_features(dataset_features_arr_path, dataset_labels_path):
 
 def extract_face_features(images, grayscale=True):
     """
-    This function extracts the face features from the images.
-    :param images:      array containing the images and labels
-    :return:            array containing the face features
+    This function extracts the face features from images.
+    
+    Parameters
+    ----------
+    images : numpy array
+        Array containing images.
+    grayscale : bool, optional
+        If the images are grayscale. The default is True.
+    
+    Returns
+    -------
+    all_features : numpy array
+        Array containing the face features.
     """
     all_features = np.zeros((len(images), 68, 2, 4))
     new_i = 0
@@ -195,6 +205,24 @@ def extract_face_features(images, grayscale=True):
 
 
 def crop_resize_images_func(new_size, images, grayscale=True):
+    """
+    This function crops and resizes the images.
+    
+    Parameters
+    ----------
+    new_size : tuple
+        The new size of the images.
+    images : array
+        The images to be cropped and resized.
+    grayscale : bool, optional
+        If the images are grayscale. The default is True.
+    
+    Returns
+    -------
+    resized_images : array
+        The resized images.
+    """
+
     new_w = new_size[0]
     new_h = new_size[1]
 
@@ -230,8 +258,6 @@ def crop_resize_images_func(new_size, images, grayscale=True):
             max_h = h
         if w > max_w:
             max_w = w
-    # print(min_x, min_y, max_w, max_h)
-
     # cretate a new array for the resized images
     if grayscale:
         resized_images = np.zeros((len(images), new_h, new_w, len(images[0, 0, 0, :])), dtype=np.uint16)
@@ -256,20 +282,40 @@ def crop_resize_images_func(new_size, images, grayscale=True):
             resized_images[i, :, :, :, 0] = resized_image
             for j in range(len(images[i, 0, 0, 0, :])):
                 resized_images[i, 0, 0, 0, j] = images[i, 0, 0, 0, j]
-    # image = cv2.resize(image, (128, 128))
     return resized_images
 
 
 def extract_eye_rectangle_remove_glasses(logger, images, labels_df, eye_rect, black_rect, grayscale=True):
+    """
+    Extracts the eye rectangle from the images and removes the glasses from the images.
+    
+    Parameters
+    ----------
+    logger : logging.Logger
+        Logger to use.
+    images : numpy.ndarray
+        Images to extract the eye rectangle from.
+    labels_df : pandas.DataFrame
+        Labels dataframe.
+    eye_rect : tuple
+        Dimensions of eye rectangle.
+    grayscale : bool, optional
+        Whether the images are grayscale or not. The default is True.
+    
+    Returns
+    -------
+    eye_array : numpy.ndarray
+        Array of eye rectangle images.
+    new_labels_numbers : list
+        The new labels.
+    """
+
     if grayscale:
         logger.error("Cannot run this extract eye rectangle function on grayscale images. Please set grayscale=False.")
         exit()
-
     eye_rect = (248, 275, 190, 225)
-    # black_rect = (245, 280, 225, 275)
     eye_array = np.zeros((len(images), eye_rect[1]-eye_rect[0], eye_rect[3]-eye_rect[2], 3, len(images[0, 0, 0, 0, :])), dtype=np.uint16)
     new_labels_numbers = []
-
     new_i = 0
     for i in range(len(images)):
         image = images[i, :, :, :, 0]
@@ -288,18 +334,49 @@ def extract_eye_rectangle_remove_glasses(logger, images, labels_df, eye_rect, bl
     return eye_array, new_labels_df
 
 
-def extract_jaw_rectangle_remove_undetectable(logger, images, labels_df, jaw_rect, black_rects, reference_colour_position, check_colour_position, grayscale=True):
+def extract_jaw_rectangle_remove_beards(logger, images, labels_df, jaw_rect, black_rects, reference_colour_position, check_colour_position, remove_beards=False, grayscale=True):
+    """ 
+    Crops the images and removes selected areas (black_rects) from the images.
+
+    Parameters
+    ----------
+    logger : logging.Logger
+        Logger used for logging.
+    images : numpy.ndarray
+        Array of images to crop.
+    labels_df : pandas.DataFrame
+        Labels dataframe.
+    jaw_rect : tuple
+        Crop area.
+    black_rects : list
+        Areas to remove from the jaw images.
+    reference_colour_position : tuple
+        Position of the reference colour to check against.
+    check_colour_position : tuple
+        Position of the colour to check.
+    remove_beards : bool, optional
+        Whether to remove images that contain full beards or not. The default is False.
+    grayscale : bool, optional
+        Whether the images are grayscale or not. The default is True.
+    
+    Returns
+    -------
+    jaw_array : numpy.ndarray
+        The jaw images.
+    new_labels_numbers : list
+        The new labels numbers.
+    """
+
     if grayscale:
         jaw_array = np.zeros((len(images), jaw_rect[1]-jaw_rect[0], jaw_rect[3]-jaw_rect[2], len(images[0, 0, 0, :])), dtype=np.uint16)
         new_labels_numbers = []
-
         new_i = 0
         for i in range(len(images)):
             image = images[i, :, :, 0]
             image = image.astype(np.uint8)
             reference_colour = image[reference_colour_position[0], reference_colour_position[1]]
             check_colour = image[check_colour_position[0], check_colour_position[1]]
-            if not np.array_equal(reference_colour, check_colour):
+            if not (remove_beards and np.array_equal(reference_colour, check_colour)):
                 jaw_img = image.copy()
                 for black_rect in black_rects:
                     jaw_img[black_rect[0]:black_rect[1], black_rect[2]:black_rect[3]] = 0
@@ -314,15 +391,13 @@ def extract_jaw_rectangle_remove_undetectable(logger, images, labels_df, jaw_rec
     else:
         jaw_array = np.zeros((len(images), jaw_rect[1]-jaw_rect[0], jaw_rect[3]-jaw_rect[2], 3, len(images[0, 0, 0, 0, :])), dtype=np.uint16)
         new_labels_numbers = []
-
         new_i = 0
         for i in range(len(images)):
             image = images[i, :, :, :, 0]
             image = image.astype(np.uint8)
             reference_colour = image[reference_colour_position[0], reference_colour_position[1], :]
             check_colour = image[check_colour_position[0], check_colour_position[1], :]
-            # if not np.array_equal(reference_colour, check_colour):
-            if True:
+            if not (remove_beards and np.array_equal(reference_colour, check_colour)):
                 jaw_img = image.copy()
                 jaw_img[black_rect1[0]:black_rect1[1], black_rect1[2]:black_rect1[3]] = 0
                 jaw_img[black_rect2[0]:black_rect2[1], black_rect2[2]:black_rect2[3]] = 0
