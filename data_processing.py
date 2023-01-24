@@ -262,7 +262,7 @@ def crop_resize_images_func(new_size, images, grayscale=True):
 
 def extract_eye_rectangle_remove_glasses(logger, images, labels_df, eye_rect, black_rect, grayscale=True):
     if grayscale:
-        logger.error("Cannot run this extract eye rectabgle function on grayscale images. Please set grayscale=False.")
+        logger.error("Cannot run this extract eye rectangle function on grayscale images. Please set grayscale=False.")
         exit()
 
     eye_rect = (248, 275, 190, 225)
@@ -286,6 +286,55 @@ def extract_eye_rectangle_remove_glasses(logger, images, labels_df, eye_rect, bl
     new_labels_df = labels_df.iloc[new_labels_numbers, :].reset_index(drop=True)
     eye_array = eye_array[:new_i, :, :, :, :]
     return eye_array, new_labels_df
+
+
+def extract_jaw_rectangle_remove_undetectable(logger, images, labels_df, jaw_rect, black_rects, reference_colour_position, check_colour_position, grayscale=True):
+    if grayscale:
+        jaw_array = np.zeros((len(images), jaw_rect[1]-jaw_rect[0], jaw_rect[3]-jaw_rect[2], len(images[0, 0, 0, :])), dtype=np.uint16)
+        new_labels_numbers = []
+
+        new_i = 0
+        for i in range(len(images)):
+            image = images[i, :, :, 0]
+            image = image.astype(np.uint8)
+            reference_colour = image[reference_colour_position[0], reference_colour_position[1]]
+            check_colour = image[check_colour_position[0], check_colour_position[1]]
+            if not np.array_equal(reference_colour, check_colour):
+                jaw_img = image.copy()
+                for black_rect in black_rects:
+                    jaw_img[black_rect[0]:black_rect[1], black_rect[2]:black_rect[3]] = 0
+                jaw_img = jaw_img[jaw_rect[0]:jaw_rect[1], jaw_rect[2]:jaw_rect[3]]
+                for j in range(len(images[0, 0, 0, :])):
+                    jaw_array[new_i, 0, 0, j] = images[i, 0, 0, j]
+                jaw_array[new_i, :, :, 0] = jaw_img
+                new_labels_numbers.append(i)
+                new_i += 1
+        new_labels_df = labels_df.iloc[new_labels_numbers, :].reset_index(drop=True)
+        jaw_array = jaw_array[:new_i, :, :, :]
+    else:
+        jaw_array = np.zeros((len(images), jaw_rect[1]-jaw_rect[0], jaw_rect[3]-jaw_rect[2], 3, len(images[0, 0, 0, 0, :])), dtype=np.uint16)
+        new_labels_numbers = []
+
+        new_i = 0
+        for i in range(len(images)):
+            image = images[i, :, :, :, 0]
+            image = image.astype(np.uint8)
+            reference_colour = image[reference_colour_position[0], reference_colour_position[1], :]
+            check_colour = image[check_colour_position[0], check_colour_position[1], :]
+            # if not np.array_equal(reference_colour, check_colour):
+            if True:
+                jaw_img = image.copy()
+                jaw_img[black_rect1[0]:black_rect1[1], black_rect1[2]:black_rect1[3]] = 0
+                jaw_img[black_rect2[0]:black_rect2[1], black_rect2[2]:black_rect2[3]] = 0
+                jaw_img = jaw_img[jaw_rect[0]:jaw_rect[1], jaw_rect[2]:jaw_rect[3]]
+                for j in range(len(images[0, 0, 0, 0, :])):
+                    jaw_array[new_i, 0, 0, 0, j] = images[i, 0, 0, 0, j]
+                jaw_array[new_i, :, :, :, 0] = jaw_img
+                new_labels_numbers.append(i)
+                new_i += 1
+        new_labels_df = labels_df.iloc[new_labels_numbers, :].reset_index(drop=True)
+        jaw_array = jaw_array[:new_i, :, :, :, :]
+    return jaw_array, new_labels_df
 
 
 def check_if_dataset_present(dataset_img_path, dataset_labels_path, filename_column_name):
@@ -329,22 +378,6 @@ def save_dataframe(logger, dataframe, dataframe_path):
     except Exception as e:
         logger.error(f"Error trying to save dataframe: {e}")
         exit(1)
-
-
-def extract_jawline_features(feature_arr):
-    """
-    This function extracts the jawline features from the landmark features.
-    :param feature_arr:     array containing the landmark features
-    :return:                array containing the jawline features
-    """
-    start_index = 0
-    end_index = 16
-    jawline_arr = np.zeros((len(feature_arr), end_index-start_index+1, 2, 4))
-    for i in range(len(feature_arr)):
-        jawline_arr[i, :, :, :] = feature_arr[i][start_index:end_index+1]
-        for j in range(len(feature_arr[i, 0, 0, :])):
-            jawline_arr[i, 0, 0, j] = feature_arr[i, 0, 0, j]
-    return jawline_arr
 
 
 def extract_jawline_features(feature_arr):
@@ -537,87 +570,87 @@ def data_preparation(data_dir, labels_path, filename_column, target_column, img_
     return batches
 
 
-# Feature extraction for training data
-def extract_features_labels_train():
-    """
-    This funtion extracts the landmarks features for all images in the folder 'dataset/celeba'.
-    It also extracts the gender label for each image.
-    :return:
-        landmark_features:  an array containing 68 landmark points for each image in which a face was detected
-        gender_labels:      an array containing the gender label (male=0 and female=1) for each image in
-                            which a face was detected
-    """
-    image_paths = [
-        os.path.join(img_train_dir_b, l) for l in os.listdir(img_train_dir_b)
-    ]
-    target_size = None
-    # Convert CSV into dataframe (tab seperators and header column defined)
-    labels_file = pd.read_csv(
-        os.path.join(basedir, labels_train_dir), sep="\t", engine="python", header=0
-    )
-    # Extract gender labels from df
-    smiling_labels_df = labels_file["smiling"]
-    smiling_labels = smiling_labels_df.values
-    if os.path.isdir(img_train_dir_b):
-        all_features = []
-        all_labels = []
+# # Feature extraction for training data
+# def extract_features_labels_train():
+#     """
+#     This funtion extracts the landmarks features for all images in the folder 'dataset/celeba'.
+#     It also extracts the gender label for each image.
+#     :return:
+#         landmark_features:  an array containing 68 landmark points for each image in which a face was detected
+#         gender_labels:      an array containing the gender label (male=0 and female=1) for each image in
+#                             which a face was detected
+#     """
+#     image_paths = [
+#         os.path.join(img_train_dir_b, l) for l in os.listdir(img_train_dir_b)
+#     ]
+#     target_size = None
+#     # Convert CSV into dataframe (tab seperators and header column defined)
+#     labels_file = pd.read_csv(
+#         os.path.join(basedir, labels_train_dir), sep="\t", engine="python", header=0
+#     )
+#     # Extract gender labels from df
+#     smiling_labels_df = labels_file["smiling"]
+#     smiling_labels = smiling_labels_df.values
+#     if os.path.isdir(img_train_dir_b):
+#         all_features = []
+#         all_labels = []
 
-        for img_path in image_paths:
-            file_name = img_path.split(".")[-2].split("/")[-1]
-            # load image
-            img = image.img_to_array(
-                image.load_img(
-                    img_path, target_size=target_size, interpolation="bicubic"
-                )
-            )
-            features, _ = run_dlib_shape(img)
-            if features is not None:
-                all_features.append(features)
-                all_labels.append(smiling_labels[int(file_name)])
+#         for img_path in image_paths:
+#             file_name = img_path.split(".")[-2].split("/")[-1]
+#             # load image
+#             img = image.img_to_array(
+#                 image.load_img(
+#                     img_path, target_size=target_size, interpolation="bicubic"
+#                 )
+#             )
+#             features, _ = run_dlib_shape(img)
+#             if features is not None:
+#                 all_features.append(features)
+#                 all_labels.append(smiling_labels[int(file_name)])
 
-    landmark_features = np.array(all_features)
-    smiling_labels = (
-        np.array(all_labels) + 1
-    ) / 2  # simply converts the -1 into 0, so male=0 and female=1
-    return landmark_features, smiling_labels
+#     landmark_features = np.array(all_features)
+#     smiling_labels = (
+#         np.array(all_labels) + 1
+#     ) / 2  # simply converts the -1 into 0, so male=0 and female=1
+#     return landmark_features, smiling_labels
 
 
-# Feature extracion for testing data
-def extract_features_labels_test():
-    """
-    This funtion extracts the landmarks features for all images in the folder 'dataset/celeba'.
-    It also extracts the gender label for each image.
-    :return:
-        landmark_features:  an array containing 68 landmark points for each image in which a face was detected
-        gender_labels:      an array containing the gender label (male=0 and female=1) for each image in
-                            which a face was detected
-    """
-    image_paths = [os.path.join(img_test_dir_b, l) for l in os.listdir(img_test_dir_b)]
-    target_size = None
-    # Convert CSV into dataframe (tab seperators and header column defined)
-    labels_file = pd.read_csv(labels_test_dir, sep="\t", engine="python", header=0)
-    # Extract gender labels from df
-    smiling_labels_df = labels_file["smiling"]
-    smiling_labels = smiling_labels_df.values
-    if os.path.isdir(img_test_dir):
-        all_features = []
-        all_labels = []
+# # Feature extracion for testing data
+# def extract_features_labels_test():
+#     """
+#     This funtion extracts the landmarks features for all images in the folder 'dataset/celeba'.
+#     It also extracts the gender label for each image.
+#     :return:
+#         landmark_features:  an array containing 68 landmark points for each image in which a face was detected
+#         gender_labels:      an array containing the gender label (male=0 and female=1) for each image in
+#                             which a face was detected
+#     """
+#     image_paths = [os.path.join(img_test_dir_b, l) for l in os.listdir(img_test_dir_b)]
+#     target_size = None
+#     # Convert CSV into dataframe (tab seperators and header column defined)
+#     labels_file = pd.read_csv(labels_test_dir, sep="\t", engine="python", header=0)
+#     # Extract gender labels from df
+#     smiling_labels_df = labels_file["smiling"]
+#     smiling_labels = smiling_labels_df.values
+#     if os.path.isdir(img_test_dir):
+#         all_features = []
+#         all_labels = []
 
-        for img_path in image_paths:
-            file_name = img_path.split(".")[-2].split("/")[-1]
-            # load image
-            img = image.img_to_array(
-                image.load_img(
-                    img_path, target_size=target_size, interpolation="bicubic"
-                )
-            )
-            features, _ = run_dlib_shape(img)
-            if features is not None:
-                all_features.append(features)
-                all_labels.append(smiling_labels[int(file_name)])
+#         for img_path in image_paths:
+#             file_name = img_path.split(".")[-2].split("/")[-1]
+#             # load image
+#             img = image.img_to_array(
+#                 image.load_img(
+#                     img_path, target_size=target_size, interpolation="bicubic"
+#                 )
+#             )
+#             features, _ = run_dlib_shape(img)
+#             if features is not None:
+#                 all_features.append(features)
+#                 all_labels.append(smiling_labels[int(file_name)])
 
-    landmark_features = np.array(all_features)
-    smiling_labels = (
-        np.array(all_labels) + 1
-    ) / 2  # simply converts the -1 into 0, so male=0 and female=1
-    return landmark_features, smiling_labels
+#     landmark_features = np.array(all_features)
+#     smiling_labels = (
+#         np.array(all_labels) + 1
+#     ) / 2  # simply converts the -1 into 0, so male=0 and female=1
+#     return landmark_features, smiling_labels

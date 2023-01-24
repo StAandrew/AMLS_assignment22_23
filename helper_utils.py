@@ -49,12 +49,16 @@ cartoon_resized_images_path = os.path.join(datasets_dir, "cartoon_set", "resized
 cartoon_resized_gray_images_path = os.path.join(datasets_dir, "cartoon_set", "resized_gray_img")
 cartoon_eyes_dir = os.path.join(datasets_dir, "cartoon_set", "eyes")
 cartoon_eyes_label_path = os.path.join(datasets_dir, "cartoon_set", "eyes_labels.csv")
+cartoon_jaws_dir = os.path.join(datasets_dir, "cartoon_set", "jaws")
+cartoon_jaws_label_path = os.path.join(datasets_dir, "cartoon_set", "jaws_labels.csv")
 
 cartoon_test_features_dir = os.path.join(datasets_dir, "cartoon_set_test", "features.npz")
 cartoon_test_resized_images_path = os.path.join(datasets_dir, "cartoon_set_test", "resized_img")
 cartoon_test_resized_gray_images_path = os.path.join(datasets_dir, "cartoon_set_test", "resized_gray_img")
 cartoon_test_eyes_dir = os.path.join(datasets_dir, "cartoon_set_test", "eyes")
 cartoon_test_eyes_label_path = os.path.join(datasets_dir, "cartoon_set_test", "eyes_labels.csv")
+cartoon_test_jaws_dir = os.path.join(datasets_dir, "cartoon_set_test", "jaws")
+cartoon_test_jaws_label_path = os.path.join(datasets_dir, "cartoon_set_test", "jaws_labels.csv")
 
 b1_model_path = os.path.join(root_dir, "B1", 'B1_weights.h5')
 b2_model_path = os.path.join(root_dir, "B2", 'B2_weights.h5')
@@ -115,6 +119,9 @@ def initial_config(warnings_off=True, cpu_only_training=False):
         paths.append(cartoon_test_resized_gray_images_path)
         paths.append(cartoon_eyes_dir)
         paths.append(cartoon_test_eyes_dir)
+        paths.append(cartoon_jaws_dir)
+        paths.append(cartoon_test_jaws_dir)
+        
         
         for path in paths:
             if not os.path.exists(path):

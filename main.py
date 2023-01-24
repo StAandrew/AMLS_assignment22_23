@@ -11,8 +11,8 @@ from B2.b2 import B2
 logger = initial_config()
 run_a1 = False
 run_a2 = False
-run_b1_images = False
-run_b1_features = True
+run_b1_images = True
+run_b1_features = False
 run_b2 = False
 
 if run_a1 or run_a2:
@@ -93,41 +93,42 @@ if run_a2:
 
 
 if run_b1_images:
-    img_size = (256, 256)
     filename_column = "file_name"
     label_name = "face_shape"
+    jaw_rectangle = (260, 390, 155, 345)
+    black_rectangles = [(245, 280, 225, 275), (260, 310, 185, 315)]
+    # black_rectangles = []
+    reference_colour_position = (320, 249)
+    check_colour_position = (385, 278)
+    img_size = (jaw_rectangle[1]-jaw_rectangle[0], jaw_rectangle[3]-jaw_rectangle[2])
     validation_size = 0.2
     batch_size = 16  # reduce if not enough GPU vRAM available
     epochs = 10
 
-    if check_if_dataset_present(cartoon_resized_images_path, cartoon_label_path, filename_column):
-        logger.info("Loading resized Cartoon dataset images...")
-        cartoon_images, cartoon_label_df = load_datasets(cartoon_resized_images_path, cartoon_label_path, filename_column, "eye_color", label_name)
-    else:
-        logger.info("Cartoon resized images not found. Loading raw images...")
-        images, cartoon_label_df = load_datasets(cartoon_img_dir, cartoon_label_path, "file_name", "eye_color", "face_shape", grayscale=False)
-        logger.info("Resizing images...")
-        cartoon_images = crop_resize_images_func(img_size, images, grayscale=False)
-        logger.info("Saving resized images...")
-        save_resized_images(cartoon_images, cartoon_resized_images_path, grayscale=False)
+    logger.info("Loading resized Cartoon dataset images...")
+    if not check_if_dataset_present(cartoon_jaws_dir, cartoon_jaws_label_path, filename_column):
+        logger.info("Cartoon jaw images not found. Loading raw data...")
+        images, cartoon_label_df = load_datasets(cartoon_img_dir, cartoon_label_path, filename_column, "eye_color", "face_shape")
+        logger.info("Resizing and removing images with beards...")
+        cartoon_jaw_images, cartoon_jaw_df = extract_jaw_rectangle_remove_undetectable(logger, images, cartoon_label_df, jaw_rectangle, black_rectangles, reference_colour_position, check_colour_position)
+        logger.info("Saving cartoon jaw images...")
+        save_resized_images(cartoon_jaw_images, cartoon_jaws_dir)
+        save_dataframe(logger, cartoon_jaw_df, cartoon_jaws_label_path)
         del images
-        # del cartoon_images
-
-    if check_if_dataset_present(cartoon_test_resized_images_path, cartoon_test_label_path, filename_column):
-        logger.info("Loading resized Cartoon test dataset images...")
-        cartoon_test_images, cartoon_test_label_df = load_datasets(cartoon_test_resized_images_path, cartoon_test_label_path, filename_column, "eye_color", label_name)
-    else:
-        logger.info("Cartoon resized images not found. Loading gray test images...")
-        images, cartoon_test_label_df = load_datasets(cartoon_test_img_dir, cartoon_test_label_path, "file_name", "eye_color", "face_shape", grayscale=False)
-        logger.info("Resizing test images...")
-        cartoon_test_images = crop_resize_images_func(img_size, images, grayscale=False)
-        logger.info("Saving resized test images...")
-        save_resized_images(cartoon_test_images, cartoon_test_resized_images_path, grayscale=False)
+    
+    logger.info("Loading resized Cartoon test dataset images...")
+    if not check_if_dataset_present(cartoon_test_jaws_dir, cartoon_test_jaws_label_path, filename_column):
+        logger.info("Cartoon test resized images not found. Loading raw data...")
+        images, cartoon_test_label_df = load_datasets(cartoon_test_img_dir, cartoon_test_label_path, filename_column, "eye_color", "face_shape")
+        logger.info("Resizing and removing images with beards...")
+        cartoon_test_jaw_images, cartoon_test_jaw_df = extract_jaw_rectangle_remove_undetectable(logger, images, cartoon_test_label_df, jaw_rectangle, black_rectangles, reference_colour_position, check_colour_position)
+        logger.info("Saving cartoon test jaw images...")
+        save_resized_images(cartoon_test_jaw_images, cartoon_test_jaws_dir)
+        save_dataframe(logger, cartoon_test_jaw_df, cartoon_test_jaws_label_path)
         del images
-        # del cartoon_test_images
 
-    cartoon_train_batches, cartoon_validation_batches = data_split_preparation(cartoon_resized_images_path, cartoon_label_path, filename_column, label_name, img_size, validation_size, batch_size)
-    cartoon_test_batches = data_preparation(cartoon_test_resized_images_path, cartoon_test_label_path, filename_column, label_name, img_size, batch_size)
+    cartoon_train_batches, cartoon_validation_batches = data_split_preparation(cartoon_jaws_dir, cartoon_jaws_label_path, filename_column, label_name, img_size, validation_size, batch_size)
+    cartoon_test_batches = data_preparation(cartoon_test_jaws_dir, cartoon_test_jaws_label_path, filename_column, label_name, img_size, batch_size)
 
     # early_stop_callback = EarlyStopping(
     #     monitor="val_loss", restore_best_weights=True, patience=5, verbose=1
@@ -266,8 +267,6 @@ if run_b2:
     # model.model.save_weights(b2_model_path)
     acc_B2_test = model.test(logger, cartoon_test_batches, verbose=2, confusion_mesh=True)
     logger.info(f"model tested, accuracy: {str(acc_B2_test)}")
-
-
 logger.info("Finished.")
 
 # logger.info("Loading Cartoon dataset features...")
