@@ -6,7 +6,7 @@ from keras.callbacks import EarlyStopping
 from A1.a1 import A1
 # from A2.a2 import A2
 from B1.b1 import B1
-# from B2.b2 import B2
+from B2.b2 import B2
 
 logger = initial_config()
 run_a1 = False
@@ -93,11 +93,11 @@ if run_a2:
 
 if run_b1:
     img_size = (300, 300)
-    validation_size = 0.2
-    batch_size = 1000  # reduce if not enough GPU vRAM available
-    epochs = 10
     filename_column = "file_name"
     label_name = "face_shape"
+    validation_size = 0.2
+    batch_size = 16  # reduce if not enough GPU vRAM available
+    epochs = 10
 
     logger.info("Loading resized gray Cartoon dataset images...")
     cartoon_gray_images, cartoon_labels_df = load_datasets(cartoon_resized_gray_images_path, cartoon_train_label_dir, "file_name", "eye_color", "face_shape")
@@ -149,11 +149,12 @@ if run_b2:
     eye_rectangle = (248, 275, 190, 310)
     black_rectangle = (245, 280, 225, 275)
     img_size = (eye_rectangle[1]-eye_rectangle[0], eye_rectangle[3]-eye_rectangle[2])
+    validation_size = 0.2
+    batch_size = 16  # reduce if not enough GPU vRAM available
+    epochs = 10
 
     logger.info("Loading resized Cartoon dataset images...")
-    if check_if_dataset_present(cartoon_eyes_dir, cartoon_label_dir, filename_column):
-        print("True")
-    else:
+    if not check_if_dataset_present(cartoon_eyes_dir, cartoon_label_dir, filename_column):
         logger.info("Cartoon eye images not found. Loading raw data...")
         images, cartoon_labels_df = load_datasets(cartoon_img_dir, cartoon_label_dir, filename_column, "eye_color", "face_shape", grayscale=False)
         logger.info("Resizing and removing images with glasses...")
@@ -163,17 +164,28 @@ if run_b2:
         del images
     
     logger.info("Loading resized Cartoon test dataset images...")
-    if check_if_dataset_present(cartoon_test_eyes_dir, cartoon_test_label_dir, filename_column):
-        print("True2")
-    else:
+    if not check_if_dataset_present(cartoon_test_eyes_dir, cartoon_test_label_dir, filename_column):
         logger.info("Cartoon test resized images not found. Loading raw data...")
         images, cartoon_test_labels_df = load_datasets(cartoon_test_img_dir, cartoon_test_label_dir, filename_column, "eye_color", "face_shape", grayscale=False)
         logger.info("Resizing and removing images with glasses...")
         cartoon_test_eye_images = extract_eye_rectangle_remove_glasses(logger, images, eye_rectangle, black_rectangle, grayscale=False)
         logger.info("Saving cartoon test eye images...")
         save_resized_images(cartoon_test_eye_images, cartoon_test_eyes_dir, grayscale=False)
-        # del images
+        del images
 
+    cartoon_train_batches, cartoon_validation_batches = data_split_preparation(cartoon_eyes_dir, cartoon_label_dir, filename_column, label_name, img_size, validation_size, batch_size)
+    cartoon_test_batches = data_preparation(cartoon_test_eyes_dir, cartoon_test_label_dir, filename_column, label_name, img_size, batch_size)
+    
+    input_shape = cartoon_train_batches.image_shape
+    logger.debug(f"input shape: {input_shape}")
+    model = B2(input_shape)
+    acc_B2_train, acc_B2_valid = model.train(
+        cartoon_train_batches, cartoon_validation_batches, epochs=epochs, verbose=2, plot=True
+    )
+    logger.info(f"Training accuracy: {str(acc_B2_train)}")
+    # model.model.save_weights(b2_model_path)
+    acc_B2_test = model.test(logger, cartoon_test_batches, verbose=2, confusion_mesh=True)
+    logger.info(f"model tested, accuracy: {str(acc_B2_test)}")
 
 
 logger.info("Finished.")
