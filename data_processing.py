@@ -108,8 +108,8 @@ def load_datasets(dataset_img_path, dataset_labels_path, filename_column_name, f
             images = np.zeros((len(labels_df), sample_image.shape[0], sample_image.shape[1], 4), dtype=np.uint16)
         else:
             images = np.zeros((len(labels_df), sample_image.shape[0], sample_image.shape[1], 3, 4), dtype=np.uint16)
-        i = 0
-        for label_name in labels_df[filename_column_name]:
+        for i in range(len(labels_df)):
+            label_name = labels_df.loc[i, filename_column_name]
             img = cv2.imread(os.path.join(dataset_img_path, label_name), IMREAD_COLOR)
             img = img.astype(np.uint8)
             image_number = int(labels_df.loc[i, filename_column_name][:-4])
@@ -131,7 +131,6 @@ def load_datasets(dataset_img_path, dataset_labels_path, filename_column_name, f
                 images[i][0][0][0][1] = image_number
                 images[i][0][0][0][2] = feature_1_label
                 images[i][0][0][0][3] = feature_2_label
-            i += 1
         return images, labels_df
     except:
         return None, None
@@ -172,11 +171,23 @@ def extract_face_features(images, grayscale=True):
     if grayscale:
         for i in range(len(images)):
             image = images[i, :, :, 0]
-            image = img.astype(np.uint8)
+            image = image.astype(np.uint8)
             features, _ = run_dlib_shape(image)
             if features is not None:
                 for j in range(len(images[i, 0, 0, :])):
                     all_features[new_i, 0, 0, j] = images[i, 0, 0, j]
+                all_features[new_i, :, :, 0] = features
+                new_i += 1
+        all_features = all_features[:new_i]
+    else:
+        for i in range(len(images)):
+            bgr_image = images[i, :, :, :, 0]
+            bgr_image = bgr_image.astype(np.uint8)
+            image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2GRAY)
+            features, _ = run_dlib_shape(image)
+            if features is not None:
+                for j in range(len(images[i, 0, 0, 0, :])):
+                    all_features[new_i, 0, 0, j] = images[i, 0, 0, 0, j]
                 all_features[new_i, :, :, 0] = features
                 new_i += 1
         all_features = all_features[:new_i]
@@ -318,6 +329,22 @@ def save_dataframe(logger, dataframe, dataframe_path):
     except Exception as e:
         logger.error(f"Error trying to save dataframe: {e}")
         exit(1)
+
+
+def extract_jawline_features(feature_arr):
+    """
+    This function extracts the jawline features from the landmark features.
+    :param feature_arr:     array containing the landmark features
+    :return:                array containing the jawline features
+    """
+    start_index = 0
+    end_index = 16
+    jawline_arr = np.zeros((len(feature_arr), end_index-start_index+1, 2, 4))
+    for i in range(len(feature_arr)):
+        jawline_arr[i, :, :, :] = feature_arr[i][start_index:end_index+1]
+        for j in range(len(feature_arr[i, 0, 0, :])):
+            jawline_arr[i, 0, 0, j] = feature_arr[i, 0, 0, j]
+    return jawline_arr
 
 
 def extract_jawline_features(feature_arr):

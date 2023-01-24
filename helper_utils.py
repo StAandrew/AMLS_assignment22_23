@@ -59,6 +59,13 @@ cartoon_test_eyes_label_path = os.path.join(datasets_dir, "cartoon_set_test", "e
 b1_model_path = os.path.join(root_dir, "B1", 'B1_weights.h5')
 b2_model_path = os.path.join(root_dir, "B2", 'B2_weights.h5')
 
+b1_model_path = os.path.join(root_dir, "B1", 'b1_model.pkl')
+b1_figure_learning_path = os.path.join(root_dir, "B1", 'b1_learning_curve.png')
+b1_figure_learning_file_path = os.path.join(root_dir, "B1", 'b1_learning_curve_data.npz')
+b1_figure_confusion_matrix_path = os.path.join(root_dir, "B1", 'b1_confusion_matrix.png')
+b1_figure_c_performance_path = os.path.join(root_dir, "B1", 'b1_c_performance.png')
+b1_figure_gamma_performance_path = os.path.join(root_dir, "B1", 'b1_gamma_performance.png')
+
 # cartoon_features_train_img_dir = os.path.join(datasets_dir, "cartoon_set_no_glasses", "img")
 # cartoon_features_train_label_dir = os.path.join(datasets_dir, "cartoon_set_no_glasses", "labels.csv")
 # cartoon_features_test_img_dir = os.path.join(datasets_dir, "cartoon_set_test_no_glasses", "img")
