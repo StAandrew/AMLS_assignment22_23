@@ -82,6 +82,9 @@ cartoon_test_jaws_label_path = os.path.join(
 b1_model_path = os.path.join(root_dir, "B1", "B1_weights.h5")
 b2_model_path = os.path.join(root_dir, "B2", "B2_weights.h5")
 
+b1_root_dir = os.path.join(root_dir, "B1")
+b2_root_dir = os.path.join(root_dir, "B2")
+
 # b1_model_path = os.path.join(root_dir, "B1", "b1_model.pkl")
 # b1_figure_learning_path = os.path.join(root_dir, "B1", "b1_learning_curve.png")
 # b1_figure_learning_file_path = os.path.join(
@@ -203,7 +206,7 @@ def helper_plot_grid_gamma(figure_save_path, gamma, mean_scores):
 
 
 # etc...
-def plot_performance(accuracy, val_accuracy, loss, val_loss, title=None):
+def plot_performance(accuracy, save_path, val_accuracy, loss, val_loss, title=None):
     """
     Plots the history of the training phase and validation phase. It compares in two different subplots the accuracy
     and the loss of the model.
@@ -234,15 +237,11 @@ def plot_performance(accuracy, val_accuracy, loss, val_loss, title=None):
     plt.xlabel("Epoch")
     # Legend
     plt.legend(["Train", "Valid"], loc="upper right")
-
-    graphs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "graphs")
-    if not os.path.exists(graphs_dir):
-        os.makedirs(graphs_dir)
-    plt.savefig(os.path.join(graphs_dir, "history.png"))
+    plt.savefig(save_path, dpi=600)
 
 
 def plot_confusion_matrix(
-    logger, class_labels, predicted_labels, true_labels, title=None
+    logger, save_path, class_labels, predicted_labels, true_labels, title=None
 ):
     """
     Plots the confusion matrix given both the true and predicted results.
@@ -274,10 +273,7 @@ def plot_confusion_matrix(
     )
     plt.xlabel("Predicted labels")
     plt.ylabel("True labels")
-    graphs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "graphs")
-    if not os.path.exists(graphs_dir):
-        os.makedirs(graphs_dir)
-    plt.savefig(os.path.join(graphs_dir, "confusion_matrix.png"))
+    plt.savefig(save_path, dpi=600)
     # Print a detailed report on the classification results
-    logger.info("\nClassification Report:\n")
-    logger.info(classification_report(true_labels, predicted_labels))
+    logger.info("\nClassification Report:")
+    logger.info(f"\n{classification_report(true_labels, predicted_labels)}")

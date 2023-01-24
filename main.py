@@ -19,9 +19,9 @@ run_a2 = True
 run_b1 = True
 run_b2 = True
 
+# Prepare training and verification data for A1 & A2 ---------------------------------------------------------------
 if run_a1 or run_a2:
     logger.info("Loading CelebA dataset features...")
-    # Prepare training and verification data for A1 & A2
     celeba_features, label_df = load_features(
         celeba_features_train_path, celeba_train_label_path
     )
@@ -263,6 +263,7 @@ if run_b1:
     logger.debug(f"input shape: {input_shape}")
     model = B1(input_shape)
     acc_B1_train, acc_B1_valid = model.train(
+        b1_root_dir,
         cartoon_train_batches,
         cartoon_validation_batches,
         epochs=epochs,
@@ -272,11 +273,12 @@ if run_b1:
     logger.info(f"Training accuracy: {str(acc_B1_train)}")
     # model.model.save_weights(b1_model_path)
     acc_B1_test = model.test(
-        logger, cartoon_test_batches, verbose=2, confusion_mesh=True
+        logger, b1_root_dir, cartoon_test_batches, verbose=2, confusion_mesh=True
     )
     logger.info(f"model tested, accuracy: {str(acc_B1_test)}")
 
 
+# B2 --------------------------------------------------------------------------------------------------------------
 if run_b2:
     filename_column = "file_name"
     label_name = "eye_color"
@@ -360,6 +362,7 @@ if run_b2:
     logger.debug(f"input shape: {input_shape}")
     model = B2(input_shape)
     acc_B2_train, acc_B2_valid = model.train(
+        b2_root_dir,
         cartoon_train_batches,
         cartoon_validation_batches,
         epochs=epochs,
@@ -369,7 +372,7 @@ if run_b2:
     logger.info(f"Training accuracy: {str(acc_B2_train)}")
     # model.model.save_weights(b2_model_path)
     acc_B2_test = model.test(
-        logger, cartoon_test_batches, verbose=2, confusion_mesh=True
+        logger, b2_root_dir, cartoon_test_batches, verbose=2, confusion_mesh=True
     )
     logger.info(f"model tested, accuracy: {str(acc_B2_test)}")
 logger.info("Finished.")
