@@ -158,6 +158,7 @@ if run_a2:
 
 # B1 --------------------------------------------------------------------------------------------------------------
 if run_b1:
+    logger.info("Running B1: Face shape classification")
     filename_column = "file_name"
     label_name = "face_shape"
     jaw_rectangle = (260, 390, 155, 345)
@@ -270,16 +271,18 @@ if run_b1:
         verbose=2,
         plot=True,
     )
-    logger.info(f"Training accuracy: {str(acc_B1_train)}")
+    logger.info("B1 training accuracy: {:<12.4f}".format(acc_B1_train))
+    logger.info("B1 validation accuracy: {:<12.4f}".format(acc_B1_valid))
     # model.model.save_weights(b1_model_path)
     acc_B1_test = model.test(
         logger, b1_root_dir, cartoon_test_batches, verbose=2, confusion_mesh=True
     )
-    logger.info(f"model tested, accuracy: {str(acc_B1_test)}")
+    logger.info("B1 model tested. Accuracy: {:<12.4f}".format(acc_B1_test))
 
 
 # B2 --------------------------------------------------------------------------------------------------------------
 if run_b2:
+    logger.info("Running B2: Eye color classification")
     filename_column = "file_name"
     label_name = "eye_color"
     eye_rectangle = (248, 275, 190, 310)
@@ -369,10 +372,11 @@ if run_b2:
         verbose=2,
         plot=True,
     )
-    logger.info(f"Training accuracy: {str(acc_B2_train)}")
+    logger.info("B2 training accuracy: {:<12.4f}".format(acc_B2_train))
+    logger.info("B2 validation accuracy: {:<12.4f}".format(acc_B2_valid))
     # model.model.save_weights(b2_model_path)
     acc_B2_test = model.test(
         logger, b2_root_dir, cartoon_test_batches, verbose=2, confusion_mesh=True
     )
-    logger.info(f"model tested, accuracy: {str(acc_B2_test)}")
+    logger.info("B2 model tested. Accuracy: {:<12.4f}".format(acc_B2_test))
 logger.info("Finished.")

@@ -206,7 +206,7 @@ def helper_plot_grid_gamma(figure_save_path, gamma, mean_scores):
 
 
 # etc...
-def plot_performance(accuracy, save_path, val_accuracy, loss, val_loss, title=None):
+def plot_performance(save_path, accuracy, val_accuracy, loss, val_loss, title=None):
     """
     Plots the history of the training phase and validation phase. It compares in two different subplots the accuracy
     and the loss of the model.

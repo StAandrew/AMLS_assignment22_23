@@ -254,7 +254,7 @@ def extract_face_features(images, grayscale=True):
 
 
 def extract_eye_rectangle_remove_glasses(
-    logger, images, labels_df, eye_rect, black_rect, grayscale=True
+    logger, images, labels_df, eye_rect, grayscale=True
 ):
     """Extracts the eye rectangle from the images and removes the glasses from the images.
 

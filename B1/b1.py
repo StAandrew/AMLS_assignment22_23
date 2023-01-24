@@ -63,7 +63,7 @@ class B1:
                 # Flatten the data to a 1-D vector for the fully connected layer.
                 Flatten(),
                 # Fully connected layer.
-                # Dense(fc1_units, activation="relu"),
+                Dense(fc1_units, activation="relu"),
                 # Apply Dropout.
                 Dropout(0.5),
                 # Output layer, class prediction.
@@ -84,7 +84,7 @@ class B1:
         )
 
     def train(
-        self, training_batches, validation_batches, epochs=15, verbose=1, plot=True
+        self, graph_save_dir, training_batches, validation_batches, epochs=15, verbose=1, plot=True
     ):
         history = self.model.fit(
             training_batches,
@@ -95,7 +95,9 @@ class B1:
             verbose=verbose,
         )
         if plot:
+            graph_save_path = os.path.join(graph_save_dir, "training_data.png")
             plot_performance(
+                graph_save_path,
                 history.history["accuracy"],
                 history.history["val_accuracy"],
                 history.history["loss"],
@@ -107,7 +109,7 @@ class B1:
         return self.model.evaluate(x=test_batches, verbose=verbose)
 
     def test(
-        self, logger, test_batches, verbose=1, confusion_mesh=True, class_labels="auto"
+        self, logger, graph_save_path, test_batches, verbose=1, confusion_mesh=True, class_labels="auto"
     ):
         predictions = self.model.predict(
             x=test_batches, steps=len(test_batches), verbose=verbose
@@ -116,5 +118,5 @@ class B1:
         predicted_labels = np.array(np.argmax(predictions, axis=-1))
         true_labels = np.array(test_batches.classes)
         if confusion_mesh:
-            plot_confusion_matrix(logger, class_labels, predicted_labels, true_labels)
+            plot_confusion_matrix(logger, graph_save_path, class_labels, predicted_labels, true_labels)
         return accuracy_score(true_labels, predicted_labels)

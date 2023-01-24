@@ -63,7 +63,7 @@ class B2:
                 # Flatten the data to a 1-D vector for the fully connected layer.
                 Flatten(),
                 # Fully connected layer.
-                # Dense(fc1_units, activation="relu"),
+                Dense(fc1_units, activation="relu"),
                 # Apply Dropout.
                 Dropout(0.5),
                 # Output layer, class prediction.
