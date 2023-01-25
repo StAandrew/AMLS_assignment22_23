@@ -109,7 +109,7 @@ class B1:
         return self.model.evaluate(x=test_batches, verbose=verbose)
 
     def test(
-        self, logger, graph_save_path, test_batches, verbose=1, confusion_mesh=True, class_labels="auto"
+        self, logger, graph_save_dir, test_batches, verbose=1, confusion_mesh=True, class_labels="auto"
     ):
         predictions = self.model.predict(
             x=test_batches, steps=len(test_batches), verbose=verbose
@@ -117,6 +117,7 @@ class B1:
         predictions = np.round(predictions)
         predicted_labels = np.array(np.argmax(predictions, axis=-1))
         true_labels = np.array(test_batches.classes)
+        graph_save_path = os.path.join(graph_save_dir, "confusion_matrix.png")
         if confusion_mesh:
             plot_confusion_matrix(logger, graph_save_path, class_labels, predicted_labels, true_labels)
         return accuracy_score(true_labels, predicted_labels)
