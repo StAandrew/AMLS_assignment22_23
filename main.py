@@ -14,8 +14,8 @@ from B1.b1 import B1
 from B2.b2 import B2
 
 logger = initial_config()
-run_a1 = False
-run_a2 = False
+run_a1 = True
+run_a2 = True
 run_b1 = True
 run_b2 = True
 
