@@ -14,8 +14,8 @@ from B1.b1 import B1
 from B2.b2 import B2
 
 logger = initial_config()
-run_a1 = True
-run_a2 = True
+run_a1 = False
+run_a2 = False
 run_b1 = True
 run_b2 = True
 
@@ -354,6 +354,7 @@ if run_b2:
         img_size,
         validation_size,
         batch_size,
+        color_mode="rgb"
     )
     cartoon_test_batches = data_preparation(
         cartoon_test_eyes_dir,
@@ -362,6 +363,7 @@ if run_b2:
         label_name,
         img_size,
         batch_size,
+        color_mode="rgb"
     )
 
     input_shape = cartoon_train_batches.image_shape
