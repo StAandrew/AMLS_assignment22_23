@@ -125,8 +125,8 @@ The dataset is made up of 10000 avatar images. Each character is defined by 18 c
 
 | Layer (type)       | Output shape      | Parameters |
 | ------------------ | ----------------- | ---------- |
-| Input              | ( , 27, 120, 1)   | 0          |
-| Convolutional_2D   | ( , 27, 120, 16)  | 160        |
+| Input              | ( , 27, 120, 3)   | 0          |
+| Convolutional_2D   | ( , 27, 120, 16)  | 448        |
 | MaxPooling_2D      | ( , 13, 60, 16)   | 0          |
 | Convolutional_2D   | ( , 13, 60, 32)   | 4640       |
 | MaxPooling_2D      | ( , 6, 30, 32)    | 0          |
