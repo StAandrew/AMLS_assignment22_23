@@ -162,7 +162,7 @@ if run_b1:
     filename_column = "file_name"
     label_name = "face_shape"
     jaw_rectangle = (260, 390, 155, 345)
-    remove_beards = False
+    remove_beards = True
     mask_eyes_nose = True
     reference_colour_position = (320, 249)
     check_colour_position = (385, 278)
@@ -175,7 +175,7 @@ if run_b1:
     epochs = 10
 
     if mask_eyes_nose:
-        black_rectangles = [(245, 280, 225, 275), (260, 310, 185, 315)]
+        black_rectangles = [(260, 360, 225, 275), (260, 310, 185, 315)]
     else:
         black_rectangles = []
 
@@ -188,8 +188,8 @@ if run_b1:
             cartoon_img_dir,
             cartoon_label_path,
             filename_column,
-            "eye_color",
             "face_shape",
+            "eye_color",
         )
         logger.info("Resizing and removing images with beards...")
         cartoon_jaw_images, cartoon_jaw_df = extract_jaw_rectangle_remove_beards(
@@ -216,10 +216,13 @@ if run_b1:
             cartoon_test_img_dir,
             cartoon_test_label_path,
             filename_column,
-            "eye_color",
             "face_shape",
+            "eye_color",
         )
-        logger.info("Resizing and removing images with beards...")
+        if remove_beards:
+            logger.info("Resizing, masking and removing images with beards...")
+        else:
+            logger.info("Resizing and masking images...")
         (
             cartoon_test_jaw_images,
             cartoon_test_jaw_df,
@@ -303,8 +306,8 @@ if run_b2:
             cartoon_img_dir,
             cartoon_label_path,
             filename_column,
-            "eye_color",
             "face_shape",
+            "eye_color",
             grayscale=False,
         )
         logger.info("Resizing and removing images with glasses...")
@@ -325,8 +328,8 @@ if run_b2:
             cartoon_test_img_dir,
             cartoon_test_label_path,
             filename_column,
-            "eye_color",
             "face_shape",
+            "eye_color",
             grayscale=False,
         )
         logger.info("Resizing and removing images with glasses...")

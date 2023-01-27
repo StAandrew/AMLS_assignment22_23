@@ -85,18 +85,6 @@ b2_model_path = os.path.join(root_dir, "B2", "B2_weights.h5")
 b1_root_dir = os.path.join(root_dir, "B1")
 b2_root_dir = os.path.join(root_dir, "B2")
 
-# b1_model_path = os.path.join(root_dir, "B1", "b1_model.pkl")
-# b1_figure_learning_path = os.path.join(root_dir, "B1", "b1_learning_curve.png")
-# b1_figure_learning_file_path = os.path.join(
-#     root_dir, "B1", "b1_learning_curve_data.npz"
-# )
-# b1_figure_confusion_matrix_path = os.path.join(
-#     root_dir, "B1", "b1_confusion_matrix.png"
-# )
-# b1_figure_c_performance_path = os.path.join(root_dir, "B1", "b1_c_performance.png")
-# b1_figure_gamma_performance_path = os.path.join(
-#     root_dir, "B1", "b1_gamma_performance.png"
-# )
 
 def initial_config(warnings_off=True, cpu_only_training=False):
     """

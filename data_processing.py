@@ -376,7 +376,7 @@ def extract_jaw_rectangle_remove_beards(
             ]
             check_colour = image[check_colour_position[0], check_colour_position[1]]
             if not (remove_beards and np.array_equal(reference_colour, check_colour)):
-                jaw_img = image.copy()
+                jaw_img = image.copy().astype(np.uint8)
                 for black_rect in black_rects:
                     jaw_img[
                         black_rect[0] : black_rect[1], black_rect[2] : black_rect[3]
@@ -410,13 +410,11 @@ def extract_jaw_rectangle_remove_beards(
             ]
             check_colour = image[check_colour_position[0], check_colour_position[1], :]
             if not (remove_beards and np.array_equal(reference_colour, check_colour)):
-                jaw_img = image.copy()
-                jaw_img[
-                    black_rect1[0] : black_rect1[1], black_rect1[2] : black_rect1[3]
-                ] = 0
-                jaw_img[
-                    black_rect2[0] : black_rect2[1], black_rect2[2] : black_rect2[3]
-                ] = 0
+                jaw_img = image.copy().astype(np.uint8)
+                for black_rect in black_rects:
+                    jaw_img[
+                        black_rect[0] : black_rect[1], black_rect[2] : black_rect[3]
+                    ] = 0
                 jaw_img = jaw_img[jaw_rect[0] : jaw_rect[1], jaw_rect[2] : jaw_rect[3]]
                 for j in range(len(images[0, 0, 0, 0, :])):
                     jaw_array[new_i, 0, 0, 0, j] = images[i, 0, 0, 0, j]
